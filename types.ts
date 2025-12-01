@@ -213,4 +213,18 @@ export interface PricingPlan {
   isPopular?: boolean;
 }
 
+export interface BBSItem {
+  barMark: string;
+  memberId: string;
+  description: string;
+  diameter: number;
+  shapeCode: '00' | '21' | '41' | '51'; // 00=Straight, 21=Stirrup, 41=L-Bend, 51=Crank
+  noOfBars: number;
+  cutLength: number; // meters
+  totalLength: number; // meters
+  unitWeight: number; // kg/m
+  totalWeight: number; // kg
+  shapeParams: { a: number; b: number; c?: number; d?: number }; // dimensions in mm
+}
+
 export type ViewState = 'dashboard' | 'chat' | 'layout' | 'structure' | 'estimation' | 'procurement' | 'management' | 'reports' | 'settings' | 'subscription';

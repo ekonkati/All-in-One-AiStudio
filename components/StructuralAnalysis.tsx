@@ -4,15 +4,16 @@ import { ProjectDetails, ViewState } from '../types';
 import AnalysisConfig from './analysis/AnalysisConfig';
 import AnalysisResults from './analysis/AnalysisResults';
 import MemberSchedule from './structure/MemberSchedule';
-import { ArrowRight, BarChart3, Table2, ShieldCheck, Ruler } from 'lucide-react';
-import { generateStructuralMembers } from '../services/calculationService';
+import BarBendingSchedule from './structure/BarBendingSchedule';
+import { ArrowRight, BarChart3, Table2, ShieldCheck, Ruler, Scissors } from 'lucide-react';
+import { generateStructuralMembers, generateBBS } from '../services/calculationService';
 
 interface StructuralAnalysisProps {
   project: Partial<ProjectDetails>;
   onChangeView?: (view: ViewState) => void;
 }
 
-type Tab = 'analysis' | 'schedule';
+type Tab = 'analysis' | 'schedule' | 'bbs';
 
 const StructuralAnalysis: React.FC<StructuralAnalysisProps> = ({ project, onChangeView }) => {
   const [activeTab, setActiveTab] = useState<Tab>('analysis');
@@ -35,6 +36,7 @@ const StructuralAnalysis: React.FC<StructuralAnalysisProps> = ({ project, onChan
   });
 
   const structuralMembers = useMemo(() => generateStructuralMembers(project), [project]);
+  const bbsItems = useMemo(() => generateBBS(project), [project]);
 
   // Auto-configure defaults based on project type
   useEffect(() => {
@@ -91,10 +93,10 @@ const StructuralAnalysis: React.FC<StructuralAnalysisProps> = ({ project, onChan
           <h2 className="text-2xl font-bold text-slate-800">Structural Design</h2>
           <p className="text-slate-500">Integrated Analysis & Detailing for {project.type}</p>
         </div>
-        <div className="flex bg-white p-1 rounded-lg border border-slate-200 shadow-sm">
+        <div className="flex bg-white p-1 rounded-lg border border-slate-200 shadow-sm overflow-x-auto">
           <button
             onClick={() => setActiveTab('analysis')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
               activeTab === 'analysis' 
                 ? 'bg-blue-600 text-white shadow-sm' 
                 : 'text-slate-600 hover:bg-slate-50'
@@ -105,7 +107,7 @@ const StructuralAnalysis: React.FC<StructuralAnalysisProps> = ({ project, onChan
           </button>
           <button
             onClick={() => setActiveTab('schedule')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
               activeTab === 'schedule' 
                 ? 'bg-blue-600 text-white shadow-sm' 
                 : 'text-slate-600 hover:bg-slate-50'
@@ -114,10 +116,21 @@ const StructuralAnalysis: React.FC<StructuralAnalysisProps> = ({ project, onChan
             <Table2 size={16} />
             <span>Member Schedule</span>
           </button>
+          <button
+            onClick={() => setActiveTab('bbs')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
+              activeTab === 'bbs' 
+                ? 'bg-blue-600 text-white shadow-sm' 
+                : 'text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <Scissors size={16} />
+            <span>BBS & Detailing</span>
+          </button>
         </div>
       </div>
 
-      {activeTab === 'analysis' ? (
+      {activeTab === 'analysis' && (
         <>
           <div className="flex justify-end mb-4">
              {step === 'results' && onChangeView && (
@@ -221,8 +234,14 @@ const StructuralAnalysis: React.FC<StructuralAnalysisProps> = ({ project, onChan
              </div>
           )}
         </>
-      ) : (
+      )} 
+      
+      {activeTab === 'schedule' && (
         <MemberSchedule members={structuralMembers} />
+      )}
+
+      {activeTab === 'bbs' && (
+        <BarBendingSchedule items={bbsItems} />
       )}
     </div>
   );

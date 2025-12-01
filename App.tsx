@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatInterface from './components/ChatInterface';
@@ -11,10 +10,12 @@ import Procurement from './components/commercial/Procurement';
 import Reports from './components/general/Reports';
 import Settings from './components/general/Settings';
 import Subscription from './components/general/Subscription';
+import Auth from './components/Auth';
 import { ViewState, ProjectDetails } from './types';
 import { Menu } from 'lucide-react';
 
 const App: React.FC = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentView, setCurrentView] = useState<ViewState>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
@@ -86,6 +87,10 @@ const App: React.FC = () => {
     }
   };
 
+  if (!isAuthenticated) {
+    return <Auth onLogin={() => setIsAuthenticated(true)} />;
+  }
+
   return (
     <div className="flex h-screen overflow-hidden bg-slate-100">
       {/* Mobile Sidebar Toggle */}
@@ -109,7 +114,7 @@ const App: React.FC = () => {
             <button onClick={() => setIsSidebarOpen(true)} className="mr-4 text-slate-600">
                 <Menu size={24} />
             </button>
-            <span className="font-bold text-slate-800">StructuraAI</span>
+            <span className="font-bold text-slate-800">StructurAI</span>
         </div>
 
         {/* Main Content */}

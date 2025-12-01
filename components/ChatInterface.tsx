@@ -13,7 +13,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onProjectUpdate, project 
     {
       id: '1',
       role: 'ai',
-      content: "Welcome to StructuraAI. I am your engineering assistant. Describe your project to get started (e.g., 'I want to build a G+2 residential building in Hyderabad on a 40x60 plot').",
+      content: "Welcome to StructurAI. I am your engineering assistant. Describe your project to get started (e.g., 'I want to build a G+2 residential building in Hyderabad on a 40x60 plot').",
       timestamp: new Date()
     }
   ]);
@@ -163,7 +163,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onProjectUpdate, project 
           </button>
         </div>
         <p className="text-center text-xs text-slate-400 mt-2">
-          StructuraAI can make mistakes. Please verify critical engineering output.
+          StructurAI can make mistakes. Please verify critical engineering output.
         </p>
       </div>
     </div>

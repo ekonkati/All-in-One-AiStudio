@@ -1,5 +1,5 @@
 
-import { ProjectDetails, BOQItem, PhaseItem, TaskItem, DocumentItem, RABill, FinancialStats, StructuralMember, QualityChecklist, SafetyStat, RateAnalysisItem, Vendor, PurchaseOrder, ReportItem, RFQ, SitePhoto, MeasurementEntry } from '../types';
+import { ProjectDetails, BOQItem, PhaseItem, TaskItem, DocumentItem, RABill, FinancialStats, StructuralMember, QualityChecklist, SafetyStat, RateAnalysisItem, Vendor, PurchaseOrder, ReportItem, RFQ, SitePhoto, MeasurementEntry, BBSItem } from '../types';
 
 // --- CORE ENGINEERING LOGIC ---
 
@@ -139,6 +139,85 @@ export const generateStructuralMembers = (project: Partial<ProjectDetails>): Str
     });
   }
   return members;
+};
+
+// --- NEW: Bar Bending Schedule Logic ---
+export const generateBBS = (project: Partial<ProjectDetails>): BBSItem[] => {
+    const isPEB = project.type === 'PEB' || project.type === 'Steel';
+    if (isPEB || project.type === 'Landfill') return [];
+
+    const members = generateStructuralMembers(project);
+    const bbs: BBSItem[] = [];
+    
+    // Weight constants (kg/m)
+    const unitWeights: Record<number, number> = {
+        8: 0.395,
+        10: 0.617,
+        12: 0.888,
+        16: 1.58,
+        20: 2.47,
+        25: 3.85
+    };
+
+    members.forEach(member => {
+        if (member.type === 'Column') {
+            const h = (project.stories || 1) * 3; // 3m per floor
+            // Main bars
+            bbs.push({
+                barMark: '01', memberId: member.mark, description: 'Main Vertical Bars',
+                diameter: 16, shapeCode: '00', noOfBars: member.count * 6, // 6 bars per col
+                cutLength: h + 1, // +1m lap/embedment
+                totalLength: (h + 1) * member.count * 6,
+                unitWeight: unitWeights[16],
+                totalWeight: (h + 1) * member.count * 6 * unitWeights[16],
+                shapeParams: { a: (h + 1) * 1000, b: 0 }
+            });
+            // Stirrups (Ties)
+            const spacing = 0.15; // 150mm
+            const stirrupCount = Math.ceil(h / spacing);
+            const w = 230 - 80; // cover
+            const d = 450 - 80;
+            const len = 2 * (w + d) + 0.1; // hook
+            bbs.push({
+                barMark: '02', memberId: member.mark, description: 'Lateral Ties (Stirrups)',
+                diameter: 8, shapeCode: '21', noOfBars: member.count * stirrupCount,
+                cutLength: len / 1000, 
+                totalLength: (len / 1000) * member.count * stirrupCount,
+                unitWeight: unitWeights[8],
+                totalWeight: (len / 1000) * member.count * stirrupCount * unitWeights[8],
+                shapeParams: { a: w, b: d }
+            });
+        }
+        else if (member.type === 'Beam') {
+             // Main Bottom
+             const span = 4.5; // Avg span
+             bbs.push({
+                barMark: '03', memberId: member.mark, description: 'Bottom Main Bars',
+                diameter: 20, shapeCode: '41', noOfBars: member.count * 3,
+                cutLength: span + 0.6, // L bends
+                totalLength: (span + 0.6) * member.count * 3,
+                unitWeight: unitWeights[20],
+                totalWeight: (span + 0.6) * member.count * 3 * unitWeights[20],
+                shapeParams: { a: 300, b: span * 1000, c: 300 }
+            });
+        }
+        else if (member.type === 'Footing') {
+            const L = 1.8;
+            const B = 1.8;
+            // Mat X
+            bbs.push({
+                barMark: '04', memberId: member.mark, description: 'Base Mat X-Dir',
+                diameter: 12, shapeCode: '41', noOfBars: member.count * Math.ceil(L/0.15),
+                cutLength: B + 0.4, // L bends up
+                totalLength: (B + 0.4) * member.count * Math.ceil(L/0.15),
+                unitWeight: unitWeights[12],
+                totalWeight: (B + 0.4) * member.count * Math.ceil(L/0.15) * unitWeights[12],
+                shapeParams: { a: 200, b: B * 1000, c: 200 }
+            });
+        }
+    });
+
+    return bbs;
 };
 
 

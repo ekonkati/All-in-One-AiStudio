@@ -1,0 +1,9 @@
+{
+  "name": "StructuraAI",
+  "description": "An AI-driven end-to-end structural design, estimation, and construction management platform.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}

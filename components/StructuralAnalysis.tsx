@@ -9,7 +9,8 @@ import DetailingViewer from './structure/DetailingViewer';
 import LoadGenerator from './analysis/LoadGenerator';
 import SafetyCheck from './structure/SafetyCheck';
 import DesignReport from './structure/DesignReport';
-import { ArrowRight, BarChart3, Table2, ShieldCheck, PenTool, Zap, BookOpen } from 'lucide-react';
+import ValidationCenter from './analysis/ValidationCenter';
+import { ArrowRight, BarChart3, Table2, ShieldCheck, PenTool, Zap, BookOpen, AlertOctagon } from 'lucide-react';
 import { generateStructuralMembers, generateBBS } from '../services/calculationService';
 
 interface StructuralAnalysisProps {
@@ -17,7 +18,7 @@ interface StructuralAnalysisProps {
   onChangeView?: (view: ViewState) => void;
 }
 
-type Tab = 'loads' | 'analysis' | 'safety' | 'report' | 'schedule' | 'bbs' | 'detailing';
+type Tab = 'loads' | 'validation' | 'analysis' | 'safety' | 'report' | 'schedule' | 'bbs' | 'detailing';
 
 const StructuralAnalysis: React.FC<StructuralAnalysisProps> = ({ project, onChangeView }) => {
   const [activeTab, setActiveTab] = useState<Tab>('loads');
@@ -110,6 +111,17 @@ const StructuralAnalysis: React.FC<StructuralAnalysisProps> = ({ project, onChan
             <span>Load Engine</span>
           </button>
           <button
+            onClick={() => setActiveTab('validation')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
+              activeTab === 'validation' 
+                ? 'bg-blue-600 text-white shadow-sm' 
+                : 'text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <AlertOctagon size={16} />
+            <span>Validation</span>
+          </button>
+          <button
             onClick={() => setActiveTab('analysis')}
             className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
               activeTab === 'analysis' 
@@ -169,6 +181,10 @@ const StructuralAnalysis: React.FC<StructuralAnalysisProps> = ({ project, onChan
 
       {activeTab === 'loads' && (
         <LoadGenerator location={project.location || 'Hyderabad'} height={(project.stories || 1) * 3} activeLoads={loads} />
+      )}
+
+      {activeTab === 'validation' && (
+        <ValidationCenter />
       )}
 
       {activeTab === 'safety' && (

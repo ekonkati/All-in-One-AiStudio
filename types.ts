@@ -321,4 +321,15 @@ export interface Plugin {
   category: 'Solver' | 'Code' | 'AI';
 }
 
+// Model Validation & Clashes (Part 38 & 41)
+export interface ValidationIssue {
+  id: string;
+  type: 'Geometry' | 'Code' | 'Constructability' | 'Clash';
+  severity: 'Critical' | 'Major' | 'Minor';
+  elementId?: string;
+  description: string;
+  location: string;
+  recommendation: string;
+}
+
 export type ViewState = 'dashboard' | 'chat' | 'layout' | 'structure' | 'estimation' | 'procurement' | 'management' | 'reports' | 'settings' | 'subscription' | 'data-exchange';

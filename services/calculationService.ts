@@ -1,5 +1,5 @@
 
-import { ProjectDetails, BOQItem, PhaseItem, TaskItem, DocumentItem, RABill, FinancialStats, StructuralMember, QualityChecklist, SafetyStat, RateAnalysisItem, Vendor, PurchaseOrder, ReportItem, RFQ, SitePhoto, MeasurementEntry, BBSItem, ComplianceCheck, ImportJob, DesignCalcStep, SensorData, ConstructionRisk, Plugin } from '../types';
+import { ProjectDetails, BOQItem, PhaseItem, TaskItem, DocumentItem, RABill, FinancialStats, StructuralMember, QualityChecklist, SafetyStat, RateAnalysisItem, Vendor, PurchaseOrder, ReportItem, RFQ, SitePhoto, MeasurementEntry, BBSItem, ComplianceCheck, ImportJob, DesignCalcStep, SensorData, ConstructionRisk, Plugin, ValidationIssue } from '../types';
 
 // --- CORE ENGINEERING LOGIC ---
 
@@ -767,7 +767,7 @@ export const getImportJobs = (): ImportJob[] => {
   ];
 };
 
-// --- NEW GENERATORS FOR ADVANCED FEATURES (Parts 17, 36, 40, 44) ---
+// --- NEW GENERATORS FOR ADVANCED FEATURES (Parts 17, 36, 40, 44, 38, 41) ---
 
 // Part 40: Sensor Data Generator (Digital Twin)
 export const generateSensorData = (type: string): SensorData[] => {
@@ -804,5 +804,15 @@ export const getPlugins = (): Plugin[] => {
     { id: 'PLG-02', name: 'FEniCSx Advanced', version: '0.7.0', description: 'Research-grade continuum mechanics solver', author: 'FEniCS Project', status: 'Available', category: 'Solver' },
     { id: 'PLG-03', name: 'IS 800:2007 Checker', version: '2.1.0', description: 'Steel Design Code Compliance Module', author: 'StructurAI', status: 'Installed', category: 'Code' },
     { id: 'PLG-04', name: 'Wind Tunnel Sim', version: '1.0.beta', description: 'CFD-based wind load generation', author: 'OpenFOAM Wrapper', status: 'Available', category: 'AI' },
+  ];
+};
+
+// Part 38 & 41: Model Validation & Clashes
+export const runModelValidation = (): ValidationIssue[] => {
+  return [
+    { id: 'VAL-01', type: 'Geometry', severity: 'Critical', elementId: 'N-405', description: 'Floating Node detected (Zero stiffness)', location: 'Grid 4-C', recommendation: 'Merge with nearest beam node' },
+    { id: 'VAL-02', type: 'Clash', severity: 'Major', elementId: 'B-201', description: 'HVAC Duct clashes with Main Beam', location: 'Floor 1, Corridor', recommendation: 'Reduce duct height or provide sleeve' },
+    { id: 'VAL-03', type: 'Code', severity: 'Major', elementId: 'C-102', description: 'Slenderness ratio > 12', location: 'Ground Floor', recommendation: 'Increase column dimension' },
+    { id: 'VAL-04', type: 'Constructability', severity: 'Minor', elementId: 'B-303', description: 'Rebar congestion > 4%', location: 'Beam-Column Joint', recommendation: 'Use bundle bars or higher dia' },
   ];
 };

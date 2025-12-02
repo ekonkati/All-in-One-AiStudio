@@ -1,6 +1,8 @@
+
 import React from 'react';
 import { FileText, Image, Table, CheckCircle2, Clock, Download, FileCode } from 'lucide-react';
-import { DocumentItem } from '../../types';
+// FIX: Corrected import path from ../../types to ../../types/index to be explicit
+import { DocumentItem } from '../../types/index';
 
 interface DocumentListProps {
   documents: DocumentItem[];

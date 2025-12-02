@@ -1,7 +1,9 @@
 
+
 import React, { useMemo, useState } from 'react';
 import { FileText, Download, FileSpreadsheet, Package, RefreshCw, Eye, Briefcase, HardHat, ShoppingCart, Shield } from 'lucide-react';
-import { ProjectDetails, ReportItem, EngineeringStatusKPI, ProcurementKPI, SafetyKPI } from '../../types';
+// FIX: Corrected import path from ../../types to ../../types/index to be explicit
+import { ProjectDetails, ReportItem, EngineeringStatusKPI, ProcurementKPI, SafetyKPI } from '../../types/index';
 import { generateReports, generateMISData } from '../../services/calculationService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 

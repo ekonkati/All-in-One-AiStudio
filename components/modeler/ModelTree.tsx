@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { ChevronRight, ChevronDown, Layers, Box } from 'lucide-react';
-import { StructuralMember } from '../../types';
+import { StructuralMember } from '../../types/index';
 
 interface ModelTreeProps {
     members: StructuralMember[];
@@ -19,12 +20,13 @@ const ModelTree: React.FC<ModelTreeProps> = ({ members, onSelectMember, selected
         setExpanded(prev => ({...prev, [key]: !prev[key]}));
     };
 
-    const groupedMembers = members.reduce((acc, member) => {
+    // FIX: Add explicit type for accumulator to resolve 'unknown' type error
+    const groupedMembers = members.reduce((acc: Record<string, StructuralMember[]>, member) => {
         const key = member.type + 's'; // e.g. "Columns", "Beams"
         if (!acc[key]) acc[key] = [];
         acc[key].push(member);
         return acc;
-    }, {} as Record<string, StructuralMember[]>);
+    }, {});
 
     return (
         <div className="flex flex-col h-full">

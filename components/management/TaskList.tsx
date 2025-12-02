@@ -1,7 +1,9 @@
 
+
 import React from 'react';
 import { CheckSquare, ChevronRight } from 'lucide-react';
-import { TaskItem } from '../../types';
+// FIX: Corrected import path from ../../types to ../../types/index to be explicit
+import { TaskItem } from '../../types/index';
 
 interface TaskListProps {
   tasks: TaskItem[];

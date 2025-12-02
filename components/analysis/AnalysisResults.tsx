@@ -1,8 +1,10 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import { CheckCircle2, AlertTriangle, Database, Anchor, Terminal, ChevronDown, ChevronUp, Activity } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { ProjectDetails } from '../../types';
+// FIX: Corrected import path from ../../types to ../../types/index to be explicit
+import { ProjectDetails } from '../../types/index';
 
 interface AnalysisResultsProps {
   project: Partial<ProjectDetails>;

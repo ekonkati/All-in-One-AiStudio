@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle, CheckCircle, XCircle, Wand2, Layers, Search, ShieldCheck, Flame, Leaf, FileText } from 'lucide-react';
-import { ValidationIssue } from '../../types';
+// FIX: Corrected import path from ../../types to ../../types/index to be explicit
+import { ValidationIssue } from '../../types/index';
 import { runModelValidation } from '../../services/calculationService';
 
 const ValidationCenter: React.FC = () => {
@@ -27,9 +28,8 @@ const ValidationCenter: React.FC = () => {
   }, []);
 
   const handleAutoFix = (id: string) => {
-    setIssues(prev => prev.map(issue => 
-      issue.id === id ? { ...issue, status: 'Fixed' } : issue
-    ).filter(i => (i as any).status !== 'Fixed'));
+    // FIX: Simplified logic to remove the fixed item, resolving the type error.
+    setIssues(prev => prev.filter(issue => issue.id !== id));
   };
 
   const renderChecklist = (items: any[]) => (

@@ -1,31 +1,29 @@
-
-
 import React, { useMemo, useState } from 'react';
 import { CheckSquare, FileText, Lock, Download, UserCheck, Package, Loader2 } from 'lucide-react';
 import { generateClosureData } from '../../services/calculationService';
 import { ActionCost } from '../../types/index';
 
 interface ProjectClosureProps {
-  onActionRequest?: (action: () => void, costKey: keyof ActionCost) => void;
+    onActionRequest?: (action: () => void, costKey: keyof ActionCost) => void;
 }
 
 const ProjectClosure: React.FC<ProjectClosureProps> = ({ onActionRequest }) => {
   const documents = useMemo(() => generateClosureData(), []);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const dossierAction = () => {
-    setIsGenerating(true);
-    setTimeout(() => {
-        setIsGenerating(false);
-        alert("Project Handover Dossier (ZIP) has been generated successfully!");
-    }, 2500);
-  };
-
   const handleGenerateDossier = () => {
+    const action = () => {
+        setIsGenerating(true);
+        setTimeout(() => {
+            setIsGenerating(false);
+            alert("Project Handover Dossier (ZIP) has been generated successfully!");
+        }, 2500);
+    };
+
     if (onActionRequest) {
-      onActionRequest(dossierAction, 'handoverDossier');
+        onActionRequest(action, 'handoverDossier');
     } else {
-      dossierAction();
+        action();
     }
   };
 

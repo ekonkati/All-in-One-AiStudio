@@ -1,6 +1,8 @@
+
 import React from 'react';
 import { Table, Cuboid, Box, Layers } from 'lucide-react';
-import { StructuralMember } from '../../types';
+// FIX: Corrected import path from ../../types to ../../types/index to be explicit
+import { StructuralMember } from '../../types/index';
 
 interface MemberScheduleProps {
   members: StructuralMember[];

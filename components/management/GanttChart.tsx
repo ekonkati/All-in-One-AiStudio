@@ -1,7 +1,9 @@
 
+
 import React from 'react';
 import { Clock } from 'lucide-react';
-import { PhaseItem } from '../../types';
+// FIX: Corrected import path from ../../types to ../../types/index to be explicit
+import { PhaseItem } from '../../types/index';
 
 interface GanttChartProps {
   phases: PhaseItem[];

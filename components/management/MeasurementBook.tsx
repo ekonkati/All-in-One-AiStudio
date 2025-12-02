@@ -1,7 +1,9 @@
 
+
 import React from 'react';
 import { BookOpen, CheckCircle2, Clock, Filter, Plus } from 'lucide-react';
-import { MeasurementEntry } from '../../types';
+// FIX: Corrected import path from ../../types to ../../types/index to be explicit
+import { MeasurementEntry } from '../../types/index';
 
 interface MeasurementBookProps {
   entries: MeasurementEntry[];

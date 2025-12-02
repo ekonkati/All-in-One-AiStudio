@@ -1,7 +1,9 @@
 
+
 import React from 'react';
 import { CheckCircle2, Crown, Zap, Shield } from 'lucide-react';
-import { PricingPlan } from '../../types';
+// FIX: Corrected import path from ../../types to ../../types/index to be explicit
+import { PricingPlan } from '../../types/index';
 
 const Subscription: React.FC = () => {
   const plans: PricingPlan[] = [

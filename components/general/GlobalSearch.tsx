@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Search, CornerDownLeft } from 'lucide-react';
-import { ProjectDetails, SearchResult, ViewState } from '../../types';
+import { ProjectDetails, SearchResult, ViewState } from '../../types/index';
 import { globalSearch } from '../../services/calculationService';
 
 interface GlobalSearchProps {

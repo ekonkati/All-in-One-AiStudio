@@ -1,7 +1,9 @@
 
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Play, Pause, RotateCcw, Clock, TrendingUp, AlertTriangle, GitMerge } from 'lucide-react';
-import { PhaseItem } from '../../types';
+// FIX: Corrected import path from ../../types to ../../types/index to be explicit
+import { PhaseItem } from '../../types/index';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { generateConstructionRisks } from '../../services/calculationService';
 

@@ -1,4 +1,10 @@
+// This file contains the complete Unified Data Model (UDM) for the application.
 
+import React from 'react';
+
+// ===============================================
+// Core Project & User Types
+// ===============================================
 
 export interface ProjectDetails {
   id: string;
@@ -6,8 +12,8 @@ export interface ProjectDetails {
   type: 'RCC' | 'Steel' | 'PEB' | 'Composite' | 'Retaining Wall' | 'Water Tank' | 'Landfill' | 'Other';
   location: string;
   dimensions: {
-    length: number; // in feet
-    width: number; // in feet (or height for walls/tanks)
+    length: number; // in meters
+    width: number; // in meters 
   };
   stories: number;
   soilType: string;
@@ -18,6 +24,150 @@ export interface ProjectDetails {
 }
 
 export type UserRole = 'Engineer' | 'Client' | 'Admin';
+
+
+// ===============================================
+// STAAD-like UNIFIED DATA MODEL (UDM)
+// ===============================================
+
+export interface Node {
+  id: number;
+  x: number;
+  y: number;
+  z: number;
+}
+
+export interface Member {
+  id: number;
+  startNode: number;
+  endNode: number;
+  sectionId: string;
+  materialId: string;
+  type: 'Beam' | 'Column' | 'Brace';
+  releaseStart?: Release;
+  releaseEnd?: Release;
+  betaAngle?: number;
+  designResult?: DesignResult;
+}
+
+export interface Plate {
+  id: number;
+  nodes: [number, number, number, number];
+  thickness: number;
+  materialId: string;
+}
+
+export interface Support {
+  id: string;
+  nodeId: number;
+  type: 'Fixed' | 'Pinned' | 'Roller' | 'Spring';
+}
+
+export interface Release {
+  fx: boolean; fy: boolean; fz: boolean;
+  mx: boolean; my: boolean; mz: boolean;
+}
+
+export interface LoadCase {
+  id: string;
+  name: string;
+  type: 'Dead' | 'Live' | 'Wind' | 'Seismic' | 'Temperature';
+}
+
+export interface StructuralLoad {
+  id: string;
+  caseId: string;
+  entityType: 'node' | 'member';
+  entityId: number;
+  type: 'Point' | 'UDL' | 'Temperature';
+  magnitude: number;
+  direction: 'X' | 'Y' | 'Z' | 'GX' | 'GY' | 'GZ';
+}
+
+export interface LoadCombination {
+  id: string;
+  name: string;
+  type: 'ULS' | 'SLS';
+  factors: { [caseId: string]: number };
+}
+
+export interface Material {
+  id: string;
+  name: string;
+  type: 'Steel' | 'Concrete';
+  E: number;
+  density: number;
+  fy?: number;
+  fck?: number;
+}
+
+export interface Section {
+  id: string;
+  name: string;
+  type: 'ISMB' | 'ISHB' | 'Rectangular' | 'Circular';
+  properties: any;
+}
+
+export type SelectedEntity =
+  | { type: 'node', id: number }
+  | { type: 'member', id: number }
+  | { type: 'support', id: string }
+  | { type: 'plate', id: number };
+
+export type ModelerTool = 'select' | 'add-node' | 'add-member' | 'add-plate' | 'add-support' | 'add-load' | 'assign-section' | 'release-member';
+
+// ===============================================
+// Analysis & Design Output Types
+// ===============================================
+
+export interface AnalysisResults {
+  memberForces: {
+    [memberId: number]: {
+      P: number;
+      Vy: number;
+      Vz: number;
+      T: number;
+      My: number;
+      Mz: number;
+    };
+  };
+}
+
+export interface DesignResult {
+  status: 'Pass' | 'Fail' | 'Warning';
+  utilization: number;
+  governingCombo: string;
+  check: string;
+}
+
+// ===============================================
+// Other Application Module Types
+// ===============================================
+
+export type ViewState =
+  'dashboard' |
+  'portfolio' |
+  'chat' |
+  'layout' |
+  'structure' |
+  'connections' |
+  'estimation' |
+  'procurement' |
+  'management' |
+  'digital-twin' |
+  'closure' |
+  'reports' |
+  'settings' |
+  'subscription' |
+  'data-exchange' |
+  'optimization-center' |
+  'ai-studio';
+
+// FIX: Added missing ActionCost type to resolve module export errors.
+export interface ActionCost {
+  drawingSheet: number;
+  handoverDossier: number;
+}
 
 export interface ChatMessage {
   id: string;
@@ -78,17 +228,42 @@ export interface DocumentItem {
   status: 'Approved' | 'Draft' | 'Pending';
 }
 
-export interface ReportItem {
+export interface SearchResult {
   id: string;
   title: string;
   description: string;
-  type: 'PDF' | 'XLSX' | 'ZIP';
-  date: string;
-  size: string;
-  category: 'Engineering' | 'Commercial' | 'Execution' | 'General';
-  status: 'Ready' | 'Generating';
+  category: 'Navigation' | 'Member' | 'Document' | 'Task' | 'Vendor' | 'Node' | 'Plate';
+  view: ViewState;
+  icon: React.ElementType;
 }
 
+export interface AiDesignStep {
+    id: number;
+    question: string;
+    action: 'INPUT' | 'GENERATE' | 'CONFIRM';
+    payload?: any;
+    response?: string;
+    status: 'pending' | 'active' | 'completed';
+}
+
+export interface RateAnalysisComponent {
+  name: string;
+  unit: string;
+  quantity: number;
+  unitRate: number;
+  amount: number;
+}
+export interface RateAnalysisItem {
+  itemId: string;
+  description: string;
+  totalRate: number;
+  unit: string;
+  components: {
+    material: RateAnalysisComponent[];
+    labor: RateAnalysisComponent[];
+    machinery: RateAnalysisComponent[];
+  };
+}
 export interface RABill {
   id: string;
   billNo: string;
@@ -96,295 +271,143 @@ export interface RABill {
   description: string;
   claimedAmount: number;
   approvedAmount: number;
-  status: 'Paid' | 'Processing' | 'Draft';
+  status: 'Paid' | 'Processing' | 'Pending';
 }
-
 export interface FinancialStats {
   contractValue: number;
   billedValue: number;
   receivedValue: number;
   outstandingValue: number;
 }
-
+export interface QualityChecklist {
+  id: string;
+  title: string;
+  type: 'HSE' | 'QA/QC';
+  location: string;
+  date: string;
+  inspector: string;
+  status: 'Passed' | 'Failed' | 'Pending';
+}
+export interface SafetyStat {
+  safeManHours: number;
+  nearMisses: number;
+}
+export interface ReportItem {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  type: 'PDF' | 'XLSX' | 'ZIP';
+  size: string;
+}
+export interface EngineeringStatusKPI {
+  designsCompleted: number;
+  designsPending: number;
+  drawingsIssued: number;
+  revisions: number;
+  designProgress: { name: string; completed: number; total: number }[];
+}
+export interface ProcurementKPI {
+  totalPOs: number;
+  totalValue: number;
+  activeVendors: number;
+  delayedDeliveries: number;
+  vendorPerformance: { name: string; rating: number }[];
+}
+export interface SafetyKPI {
+  totalInspections: number;
+  ncrOpen: number;
+  complianceScore: number;
+  passed: number;
+  failed: number;
+}
+export interface SitePhoto {
+  id: string;
+  url: string;
+  caption: string;
+  date: string;
+  tags: string[];
+}
 export interface MeasurementEntry {
   id: string;
   date: string;
-  boqRef: string;
   description: string;
-  location: string; // Grid/Level
+  location: string;
+  boqRef: string;
   nos: number;
   length: number;
   breadth: number;
   depth: number;
   quantity: number;
   unit: string;
-  status: 'Recorded' | 'Billed';
+  status: 'Billed' | 'Pending';
 }
-
-export interface QualityChecklist {
-  id: string;
-  title: string;
-  location: string;
-  date: string;
-  inspector: string;
-  status: 'Passed' | 'Failed' | 'Pending';
-  type: 'QA' | 'HSE';
-}
-
-export interface SafetyStat {
-  safeManHours: number;
-  incidents: number;
-  nearMisses: number;
-  lastIncidentDate: string;
-}
-
-export interface SitePhoto {
-  id: string;
-  url: string;
-  caption: string;
-  date: string;
-  uploadedBy: string;
-  tags: string[];
-}
-
-export interface RateComponent {
-  name: string;
-  unit: string;
-  quantity: number;
-  unitRate: number;
-  amount: number;
-  orderDate?: string;
-}
-
-export interface RateAnalysisItem {
-  itemId: string;
-  description: string;
-  totalRate: number;
-  unit: string;
-  components: {
-    material: RateComponent[];
-    labor: RateComponent[];
-    machinery: RateComponent[];
-  };
-}
-
-export interface Vendor {
-  id: string;
-  name: string;
-  category: string;
-  rating: number;
-  contact: string;
-  status: 'Active' | 'Blacklisted';
-}
-
-export interface Bid {
-  vendorId: string;
-  vendorName: string;
-  amount: number;
-  rank: 'L1' | 'L2' | 'L3';
-  submissionDate: string;
-}
-
-export interface RFQ {
-  id: string;
-  rfqNo: string;
-  title: string;
-  items: string;
-  floatDate: string;
-  dueDate: string;
-  status: 'Open' | 'Closed' | 'Evaluated';
-  bids: Bid[];
-}
-
-export interface PurchaseOrder {
-  id: string;
-  poNumber: string;
-  vendorId: string;
-  vendorName: string;
-  material: string;
-  quantity: number;
-  unit: string;
-  rate: number;
-  amount: number;
-  orderDate: string;
-  deliveryDate: string;
-  status: 'Draft' | 'Sent' | 'Delivered' | 'Partial';
-}
-
 export interface PricingPlan {
   id: string;
   name: string;
   price: number;
-  period: 'month' | 'project';
+  period: string;
   features: string[];
-  isPopular?: boolean;
+  isPopular: boolean;
 }
-
 export interface BBSItem {
   barMark: string;
   memberId: string;
   description: string;
+  shapeCode: string;
+  shapeParams: { a: number; b: number; c?: number; d?: number };
   diameter: number;
-  shapeCode: '00' | '21' | '41' | '51'; // 00=Straight, 21=Stirrup, 41=L-Bend, 51=Crank
+  cutLength: number;
   noOfBars: number;
-  cutLength: number; // meters
-  totalLength: number; // meters
-  unitWeight: number; // kg/m
-  totalWeight: number; // kg
-  shapeParams: { a: number; b: number; c?: number; d?: number }; // dimensions in mm
+  totalLength: number;
+  totalWeight: number;
 }
-
-export interface ComplianceCheck {
-  id: string;
-  parameter: string;
-  allowed: string;
-  actual: string;
-  status: 'Pass' | 'Fail' | 'Warning';
-  description: string;
-}
-
-export interface ImportJob {
-  id: string;
-  fileName: string;
-  type: 'STAAD' | 'ETABS' | 'DXF' | 'Sketch';
-  date: string;
-  status: 'Completed' | 'Processing' | 'Failed';
-  details: string;
-}
-
-// Engineering Types for Load Engine (Part 7)
 export interface WindParams {
-  basicWindSpeed: number; // Vb in m/s
-  k1: number; // Probability Factor
-  k2: number; // Terrain Roughness Factor
-  k3: number; // Topography Factor
-  k4: number; // Cyclonic Factor
-  designWindSpeed: number; // Vz
-  windPressure: number; // Pz
+  basicWindSpeed: number;
+  k1: number;
+  k2: number;
+  k3: number;
+  k4: number;
+  designWindSpeed: number;
+  windPressure: number;
 }
-
 export interface SeismicParams {
   zone: 'II' | 'III' | 'IV' | 'V';
-  zoneFactor: number; // Z
-  importanceFactor: number; // I
-  responseReduction: number; // R
-  soilType: 'Soft' | 'Medium' | 'Hard'; // Sa/g dependency
-  baseShearCoeff: number; // Ah
+  zoneFactor: number;
+  importanceFactor: number;
+  responseReduction: number;
+  soilType: string;
+  baseShearCoeff: number;
 }
-
-// Load Combinations (Part 7)
-export interface LoadCombination {
-  id: string;
-  name: string;
-  type: 'ULS' | 'SLS'; // Ultimate vs Serviceability
-  factors: { [key: string]: number }; // e.g. { DL: 1.5, LL: 1.5 }
-}
-
-// Detailed Design Calculation (Part 9)
-export interface DesignCalcStep {
-  id: string;
-  stepName: string;
-  reference: string; // e.g., "IS 456 Cl 26.5"
-  description: string;
-  formula: string;
-  substitution: string;
-  result: string;
-  status: 'Pass' | 'Fail' | 'Info';
-}
-
-// Digital Twin & Monitoring (Part 40)
 export interface SensorData {
   id: string;
-  type: 'Strain' | 'Tilt' | 'Vibration' | 'Temperature';
+  type: 'Temperature' | 'Strain';
   location: string;
+  status: 'Normal' | 'Warning';
   value: number;
   unit: string;
-  status: 'Normal' | 'Warning' | 'Critical';
-  timestamp: string;
   history: { time: string; value: number }[];
 }
-
-// Construction Risks (Part 44)
-export interface ConstructionRisk {
-  id: string;
-  category: 'Weather' | 'Supply' | 'Labor' | 'Design';
-  description: string;
-  probability: 'High' | 'Medium' | 'Low';
-  impact: 'Critical' | 'Moderate' | 'Low';
-  mitigation: string;
-}
-
-// Plugin Architecture (Part 17)
-export interface Plugin {
-  id: string;
-  name: string;
-  version: string;
-  description: string;
-  author: string;
-  status: 'Installed' | 'Available' | 'Update';
-  category: 'Solver' | 'Code' | 'AI';
-}
-
-// Model Validation & Clashes (Part 38 & 41)
 export interface ValidationIssue {
   id: string;
-  type: 'Geometry' | 'Code' | 'Constructability' | 'Clash';
-  severity: 'Critical' | 'Major' | 'Minor';
-  elementId?: string;
+  type: 'Geometry' | 'Clash' | 'Code';
+  severity: 'Minor' | 'Major' | 'Critical';
   description: string;
   location: string;
   recommendation: string;
+  status: 'Open' | 'Fixed';
 }
-
-// Inventory Management (Part 18/28)
-export interface InventoryItem {
-  id: string;
-  material: string;
-  unit: string;
-  stock: number;
-  required: number;
-  reorderLevel: number;
-  status: 'Adequate' | 'Low' | 'Critical';
-}
-
-// MEP Coordination (Part 41)
-export interface MEPItem {
-  id: string;
-  type: 'Duct' | 'Pipe' | 'Tray';
-  description: string;
-  start: { x: number, y: number };
-  end: { x: number, y: number };
-  width: number;
-  color: string;
-  clash: boolean;
-}
-
-// Portfolio Management (Part 35)
 export interface ProjectSummary {
   id: string;
   name: string;
-  type: string;
+  type: 'RCC' | 'PEB';
   location: string;
   progress: number;
-  budget: number;
-  spent: number;
   status: 'On Track' | 'Delayed' | 'Critical';
   riskLevel: 'Low' | 'Medium' | 'High';
+  budget: number;
+  spent: number;
 }
-
-// Approval Workflow (Part 29)
-export interface ApprovalRequest {
-  id: string;
-  subject: string;
-  type: 'Drawing' | 'BOQ' | 'Design' | 'Variation';
-  requestedBy: string;
-  date: string;
-  status: 'Pending' | 'Approved' | 'Rejected';
-  version: string;
-  comments?: string;
-}
-
-// Billing (Part 25)
 export interface BillLineItem {
   id: string;
   description: string;
@@ -394,120 +417,147 @@ export interface BillLineItem {
   prevQty: number;
   amount: number;
 }
-
-// Connection Design (Part 9.7)
-export interface ConnectionResult {
+export interface OptimizationSuggestion {
   id: string;
-  type: 'Moment End Plate' | 'Shear Fin' | 'Base Plate';
-  members: string;
-  status: 'Pass' | 'Fail';
-  utilization: number; // Ratio < 1.0 is pass
-  checks: { check: string; val: number; limit: number; status: string }[];
+  category: 'Material' | 'Structural' | 'Constructability';
+  title: string;
+  description: string;
+  impact: string; // e.g., "High Impact / ~8% Savings"
+  status: 'pending' | 'applied';
 }
 
-// Project Closure (Part 27)
-export interface ClosureDocument {
-  id: string;
-  name: string;
-  status: 'Pending' | 'Submitted' | 'Approved';
-  type: 'As-Built' | 'Warranty' | 'NOC' | 'Handover';
-}
-
-// Audit & Security (Part 19)
-export interface AuditLog {
+export interface Plugin {
     id: string;
+    name: string;
+    description: string;
+    author: string;
+    version: string;
+    status: 'Installed' | 'Install';
+}
+
+export interface AuditLog {
+    id: number;
     timestamp: string;
     user: string;
     action: string;
     module: string;
-    details: string;
-    status: 'Success' | 'Failed' | 'Warning';
+    status: 'Success' | 'Fail';
 }
 
-// Deployment Status (Part 42)
 export interface SystemStatus {
     component: string;
-    status: 'Healthy' | 'Degraded' | 'Down';
-    latency: number; // ms
+    status: 'Healthy' | 'Warning';
     uptime: string;
+    latency: number;
 }
 
-// AI Optimization & Value Engineering
-export interface OptimizationSuggestion {
+export interface ImportJob {
     id: string;
-    category: 'Material' | 'Structural' | 'Cost';
-    title: string;
-    description: string;
-    impact: string; // e.g., "-5% Cost"
-    status: 'pending' | 'applied';
+    fileName: string;
+    type: string;
+    date: string;
+    status: 'Completed' | 'Processing' | 'Failed';
+    details: string;
 }
 
-// Token/Credit System
-export interface ActionCost {
-    analysisRun: number;
-    drawingSheet: number;
-    handoverDossier: number;
-}
-
-// MIS Dashboards (Part 14)
-export interface EngineeringStatusKPI {
-  designsCompleted: number;
-  designsPending: number;
-  drawingsIssued: number;
-  revisions: number;
-  designProgress: { name: string, completed: number, total: number }[];
-}
-export interface ProcurementKPI {
-  totalPOs: number;
-  totalValue: number;
-  activeVendors: number;
-  delayedDeliveries: number;
-  vendorPerformance: { name: string, rating: number }[];
-}
-export interface SafetyKPI {
-  totalInspections: number;
-  passed: number;
-  failed: number;
-  ncrOpen: number;
-  complianceScore: number;
-}
-
-// Global Search
-export interface SearchResult {
-  id: string;
-  title: string;
-  description: string;
-  category: 'Navigation' | 'Member' | 'Document' | 'Task' | 'Vendor';
-  view: ViewState;
-  icon: React.ElementType;
-}
-
-// AI Design Studio
-export interface AiDesignStep {
+export interface ConstructionRisk {
     id: number;
-    question: string;
-    action: 'INPUT' | 'GENERATE' | 'CONFIRM';
-    payload?: any; // For GENERATE, what to draw
-    response?: string;
-    status: 'pending' | 'active' | 'completed';
+    category: string;
+    description: string;
+    probability: 'High' | 'Medium' | 'Low';
+    mitigation: string;
 }
 
+export interface DesignStep {
+    id: number;
+    stepName: string;
+    reference: string;
+    formula: string;
+    substitution: string;
+    result: string;
+    description: string;
+    status: 'Pass' | 'Fail' | 'Info';
+}
 
-export type ViewState = 
-  'dashboard' | 
-  'portfolio' | 
-  'chat' | 
-  'layout' | 
-  'structure' | 
-  'connections' | 
-  'estimation' | 
-  'procurement' | 
-  'management' | 
-  'digital-twin' | 
-  'closure' | 
-  'reports' | 
-  'settings' | 
-  'subscription' | 
-  'data-exchange' |
-  'optimization-center' |
-  'ai-studio';
+export interface ApprovalRequest {
+    id: string;
+    type: 'Drawing' | 'Variation' | 'RFI';
+    subject: string;
+    requestedBy: string;
+    date: string;
+    version: string;
+    status: 'Pending' | 'Approved' | 'Rejected';
+    comments?: string;
+}
+
+export interface ConnectionDesign {
+    id: string;
+    type: string;
+    members: string;
+    status: 'Pass' | 'Fail';
+    utilization: number;
+    checks: {
+        check: string;
+        val: number;
+        limit: number;
+        status: 'Pass' | 'Fail';
+    }[];
+}
+
+export interface ClosureDocument {
+    id: string;
+    name: string;
+    type: string;
+    status: 'Approved' | 'Submitted' | 'Pending';
+}
+
+export interface Schedule {
+    phases: PhaseItem[];
+    tasks: TaskItem[];
+    totalProgress: number;
+}
+
+export interface Financials {
+    stats: FinancialStats;
+    bills: RABill[];
+}
+
+export interface QualityData {
+    checklists: QualityChecklist[];
+    stats: SafetyStat;
+}
+
+export interface Vendor {
+    id: string;
+    name: string;
+    category: string;
+    contact: string;
+    rating: number;
+    status: 'Active' | 'Inactive';
+}
+
+export interface PurchaseOrder {
+    id: string;
+    poNumber: string;
+    vendorName: string;
+    material: string;
+    quantity: number;
+    unit: string;
+    amount: number;
+    status: 'Sent' | 'Partial' | 'Delivered';
+}
+
+export interface RFQ {
+    id: string;
+    rfqNo: string;
+    title: string;
+    floatDate: string;
+    dueDate: string;
+    status: 'Floated' | 'Evaluated';
+    bids: {
+        vendorName: string;
+        submissionDate: string;
+        amount: number;
+        rank: 'L1' | 'L2' | 'L3';
+    }[];
+}

@@ -1,7 +1,9 @@
 
+
 import React from 'react';
 import { Image, Upload, MapPin, Calendar, Tag } from 'lucide-react';
-import { SitePhoto } from '../../types';
+// FIX: Corrected import path from ../../types to ../../types/index to be explicit
+import { SitePhoto } from '../../types/index';
 
 interface SiteGalleryProps {
   photos: SitePhoto[];

@@ -1,8 +1,10 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { Wind, Activity, MapPin, Info, Layers } from 'lucide-react';
 import { calculateWindLoad, calculateSeismicLoad, generateLoadCombinations } from '../../services/loadService';
-import { WindParams, SeismicParams, LoadCombination } from '../../types';
+// FIX: Corrected import path from ../../types to ../../types/index to be explicit
+import { WindParams, SeismicParams, LoadCombination } from '../../types/index';
 
 interface LoadGeneratorProps {
   location: string;

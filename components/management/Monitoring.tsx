@@ -1,9 +1,11 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { Activity, Thermometer, Wifi, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { generateSensorData } from '../../services/calculationService';
-import { SensorData } from '../../types';
+// FIX: Corrected import path from ../../types to ../../types/index to be explicit
+import { SensorData } from '../../types/index';
 
 const Monitoring: React.FC = () => {
   const [sensors, setSensors] = useState<SensorData[]>([]);

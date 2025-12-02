@@ -1,7 +1,9 @@
 
+
 import React, { useMemo } from 'react';
 import { Ruler, Scissors, Layers, Download } from 'lucide-react';
-import { BBSItem } from '../../types';
+// FIX: Corrected import path from ../../types to ../../types/index to be explicit
+import { BBSItem } from '../../types/index';
 
 interface BarBendingScheduleProps {
   items: BBSItem[];

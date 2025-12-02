@@ -1,7 +1,9 @@
 
+
 import React, { useState, useMemo } from 'react';
 import { Users, Truck, CheckSquare, Clock, AlertCircle, Package, ArrowRight, Zap, RefreshCw, TrendingDown, BarChart2, ShoppingCart } from 'lucide-react';
-import { ProjectDetails, ViewState } from '../../types';
+// FIX: Corrected import path from ../../types to ../../types/index to be explicit
+import { ProjectDetails, ViewState } from '../../types/index';
 import { generateInventory } from '../../services/calculationService';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 

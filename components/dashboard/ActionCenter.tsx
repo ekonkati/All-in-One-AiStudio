@@ -1,7 +1,9 @@
 
+
 import React from 'react';
 import { MousePointerClick, Building, AlertCircle, Calendar, MapPin, Share2, ShoppingCart, FileText, Activity } from 'lucide-react';
-import { ViewState } from '../../types';
+// FIX: Corrected import path from ../../types to ../../types/index to be explicit
+import { ViewState } from '../../types/index';
 
 interface ActionCenterProps {
   onChangeView: (view: ViewState) => void;

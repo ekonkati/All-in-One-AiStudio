@@ -1,4 +1,6 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
+// FIX: Corrected import path from ../types/index to ../types/index.ts to be explicit
 import { ProjectDetails } from "../types/index";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });

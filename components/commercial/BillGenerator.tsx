@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { FileText, Calculator, Save, Plus, Trash2 } from 'lucide-react';
-import { BillLineItem } from '../../types';
+import { BillLineItem } from '../../types/index';
 
 interface BillGeneratorProps {
   onClose: () => void;
@@ -46,66 +46,60 @@ const BillGenerator: React.FC<BillGeneratorProps> = ({ onClose }) => {
                  </div>
                  <div>
                      <label className="block text-xs text-slate-500 mb-1">Bill Date</label>
-                     <input type="date" className="w-full border border-slate-300 rounded p-2 text-sm" />
+                     <input type="date" defaultValue={new Date().toISOString().split('T')[0]} className="w-full border border-slate-300 rounded p-2 text-sm" />
                  </div>
              </div>
 
-             <table className="w-full text-left text-sm mb-6">
-                 <thead className="bg-slate-50 border-b border-slate-200 text-xs text-slate-500 uppercase">
-                     <tr>
-                         <th className="p-2">Description</th>
-                         <th className="p-2 w-20 text-center">Unit</th>
-                         <th className="p-2 w-24 text-right">Rate</th>
-                         <th className="p-2 w-24 text-right">Prev Qty</th>
-                         <th className="p-2 w-24 text-right">Curr Qty</th>
-                         <th className="p-2 w-32 text-right">Amount</th>
-                     </tr>
-                 </thead>
-                 <tbody className="divide-y divide-slate-100">
-                     {items.map((item, idx) => (
-                         <tr key={idx}>
-                             <td className="p-2"><input type="text" value={item.description} onChange={(e) => updateItem(idx, 'description', e.target.value)} className="w-full border-none focus:ring-0 text-sm" /></td>
-                             <td className="p-2 text-center">{item.unit}</td>
-                             <td className="p-2 text-right">{item.rate}</td>
-                             <td className="p-2 text-right text-slate-400">{item.prevQty}</td>
-                             <td className="p-2 text-right"><input type="number" value={item.qty} onChange={(e) => updateItem(idx, 'qty', Number(e.target.value))} className="w-20 border border-blue-200 rounded p-1 text-right" /></td>
-                             <td className="p-2 text-right font-bold">{item.amount.toLocaleString()}</td>
-                         </tr>
-                     ))}
-                 </tbody>
-             </table>
+             {/* Table for bill items */}
+             <div className="border border-slate-200 rounded-lg overflow-hidden">
+                <table className="w-full text-sm">
+                    <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                        <tr>
+                            <th className="p-2 text-left">Description</th>
+                            <th className="p-2 text-center w-20">Unit</th>
+                            <th className="p-2 text-right w-24">Prev Qty</th>
+                            <th className="p-2 text-right w-24">Current Qty</th>
+                            <th className="p-2 text-right w-28">Rate (₹)</th>
+                            <th className="p-2 text-right w-32">Amount (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                        {items.map((item, idx) => (
+                            <tr key={item.id}>
+                                <td className="p-2">{item.description}</td>
+                                <td className="p-2 text-center">{item.unit}</td>
+                                <td className="p-2 text-right text-slate-500">{item.prevQty}</td>
+                                <td className="p-2"><input type="number" value={item.qty} onChange={e => updateItem(idx, 'qty', parseFloat(e.target.value))} className="w-full text-right border-slate-300 rounded p-1"/></td>
+                                <td className="p-2"><input type="number" value={item.rate} onChange={e => updateItem(idx, 'rate', parseFloat(e.target.value))} className="w-full text-right border-slate-300 rounded p-1"/></td>
+                                <td className="p-2 text-right font-semibold">{item.amount.toLocaleString()}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+             </div>
              
-             <div className="flex justify-end">
-                 <div className="w-64 space-y-2 text-sm">
-                     <div className="flex justify-between">
-                         <span className="text-slate-500">Gross Amount</span>
-                         <span className="font-medium">₹ {totalAmount.toLocaleString()}</span>
-                     </div>
-                     <div className="flex justify-between text-red-600">
-                         <span>Less: Retention (5%)</span>
-                         <span>- {retention.toLocaleString()}</span>
-                     </div>
-                     <div className="flex justify-between text-red-600">
-                         <span>Less: TDS (2%)</span>
-                         <span>- {tds.toLocaleString()}</span>
-                     </div>
-                     <div className="flex justify-between text-blue-600">
-                         <span>Add: GST (18%)</span>
-                         <span>+ {gst.toLocaleString()}</span>
-                     </div>
-                     <div className="flex justify-between border-t border-slate-300 pt-2 text-base font-bold text-slate-900">
-                         <span>Net Payable</span>
-                         <span>₹ {netPayable.toLocaleString()}</span>
-                     </div>
+             {/* Calculation Summary */}
+             <div className="grid grid-cols-2 gap-x-8 mt-6 max-w-sm ml-auto">
+                 <div className="text-right text-sm text-slate-600 space-y-2">
+                     <p>Gross Amount:</p>
+                     <p>Add: GST @ 18%:</p>
+                     <p>Less: Retention @ 5%:</p>
+                     <p>Less: TDS @ 2%:</p>
+                     <p className="font-bold text-base text-slate-800 border-t pt-2 mt-2 border-slate-200">Net Payable:</p>
+                 </div>
+                 <div className="text-right text-sm font-mono space-y-2">
+                     <p>{totalAmount.toLocaleString()}</p>
+                     <p>{gst.toLocaleString()}</p>
+                     <p>({retention.toLocaleString()})</p>
+                     <p>({tds.toLocaleString()})</p>
+                     <p className="font-bold text-base text-blue-700 border-t pt-2 mt-2 border-slate-200">₹ {netPayable.toLocaleString()}</p>
                  </div>
              </div>
           </div>
-
-          <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-end gap-3 flex-shrink-0">
-             <button onClick={onClose} className="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-100">Cancel</button>
-             <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 shadow-sm">
-                 <FileText size={16} /> Generate Invoice
-             </button>
+          <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+              <button className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg flex items-center gap-2 hover:bg-blue-700">
+                  <Save size={16}/> Save & Generate Bill
+              </button>
           </div>
        </div>
     </div>

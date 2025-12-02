@@ -1,8 +1,10 @@
 
+
 import React, { useMemo } from 'react';
 import { LayoutDashboard, MapPin, AlertTriangle, CheckCircle2, Clock, DollarSign, BarChart3 } from 'lucide-react';
 import { generatePortfolioData } from '../../services/calculationService';
-import { ProjectSummary } from '../../types';
+// FIX: Corrected import path from ../../types to ../../types/index to be explicit
+import { ProjectSummary } from '../../types/index';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 const Portfolio: React.FC = () => {

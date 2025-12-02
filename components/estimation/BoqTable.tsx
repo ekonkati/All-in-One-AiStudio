@@ -1,6 +1,8 @@
 
+
 import React from 'react';
-import { BOQItem } from '../../types';
+// FIX: Corrected import path from ../../types to ../../types/index to be explicit
+import { BOQItem } from '../../types/index';
 
 interface BoqTableProps {
   boq: BOQItem[];

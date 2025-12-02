@@ -1,89 +1,78 @@
 import React, { useState, useEffect } from 'react';
-import { StructuralMember } from '../../types';
-import { Edit, Save, X, Info } from 'lucide-react';
+import { SelectedEntity, Node, Member, Support, Plate } from '../../types/index';
+import { Edit, Save, X, ArrowLeft, Ruler, Box, Zap, BarChart3, CheckCircle, XCircle } from 'lucide-react';
 
 interface PropertiesPanelProps {
-    member: StructuralMember | null | undefined;
-    onUpdate: (id: string, newProps: Partial<StructuralMember>) => void;
+    entity: Node | Member | Support | Plate | null;
+    entityType: 'node' | 'member' | 'support' | 'plate' | null;
+    onUpdate: (newProps: any) => void;
+    onDeselect: () => void;
 }
 
-const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ member, onUpdate }) => {
-    const [editMode, setEditMode] = useState(false);
-    const [formData, setFormData] = useState<Partial<StructuralMember>>({});
+const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ entity, entityType, onUpdate, onDeselect }) => {
+    const [activeTab, setActiveTab] = useState<'geometry' | 'props' | 'loads' | 'results'>('geometry');
+    const [formData, setFormData] = useState<any>({});
 
     useEffect(() => {
-        if (member) {
-            setFormData(member);
-            setEditMode(false);
+        if (entity) {
+            setFormData(entity);
+            if ('designResult' in entity && entity.designResult) setActiveTab('results');
+            else setActiveTab('geometry');
         }
-    }, [member]);
-
-    const handleSave = () => {
-        if (member) {
-            onUpdate(member.id, formData);
-        }
-        setEditMode(false);
-    };
-
-    if (!member) {
-        return (
-            <div className="p-6 text-center text-slate-500 flex flex-col items-center justify-center h-full">
-                <Info size={32} className="mb-4 text-slate-300" />
-                <h3 className="font-semibold">No Member Selected</h3>
-                <p className="text-sm mt-1">Click on a member in the 3D view or Model Tree to see its properties.</p>
-            </div>
-        );
-    }
+    }, [entity]);
     
+    if (!entity) return <div className="p-6 text-center text-slate-400">Select an entity to view its properties.</div>;
+
+    const TabButton: React.FC<any> = ({ id, label, icon: Icon, disabled = false }) => (
+        <button onClick={() => setActiveTab(id)} disabled={disabled} className={`flex-1 py-2 text-xs font-medium border-b-2 flex items-center justify-center gap-1 ${activeTab === id ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500'} ${disabled ? 'opacity-50' : ''}`}>
+            <Icon size={14} /> {label}
+        </button>
+    );
+
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full bg-white">
             <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-                <h3 className="font-bold text-slate-800">Properties: {member.mark}</h3>
-                {!editMode ? (
-                    <button onClick={() => setEditMode(true)} className="p-1.5 rounded-md hover:bg-slate-200 text-slate-500">
-                        <Edit size={16} />
-                    </button>
-                ) : (
-                    <div className="flex gap-2">
-                        <button onClick={() => setEditMode(false)} className="p-1.5 rounded-md hover:bg-slate-200 text-slate-500">
-                            <X size={16} />
-                        </button>
-                        <button onClick={handleSave} className="p-1.5 rounded-md bg-blue-100 text-blue-600 hover:bg-blue-200">
-                            <Save size={16} />
-                        </button>
+                <div className="flex items-center gap-2">
+                    <button onClick={onDeselect} className="p-1.5 rounded-md hover:bg-slate-200"><ArrowLeft size={16} /></button>
+                    <h3 className="font-bold text-slate-800 text-sm capitalize">{entityType} #{'id' in entity ? entity.id : ''}</h3>
+                </div>
+            </div>
+            <div className="flex border-b border-slate-200">
+                <TabButton id="geometry" label="Geo" icon={Ruler} />
+                <TabButton id="props" label="Prop" icon={Box} />
+                <TabButton id="results" label="Results" icon={BarChart3} disabled={!('designResult' in entity && entity.designResult)}/>
+            </div>
+            <div className="p-4 space-y-4 flex-1 overflow-y-auto">
+                {activeTab === 'geometry' && entityType === 'node' && (
+                    <>
+                        <PropertyItem label="X Coordinate" value={(entity as Node).x} />
+                        <PropertyItem label="Y Coordinate" value={(entity as Node).y} />
+                        <PropertyItem label="Z Coordinate" value={(entity as Node).z} />
+                    </>
+                )}
+                 {activeTab === 'props' && entityType === 'member' && (
+                    <>
+                         <PropertyItem label="Section Profile" value={(entity as Member).sectionId} />
+                         <PropertyItem label="Material" value={(entity as Member).materialId} />
+                    </>
+                )}
+                {activeTab === 'results' && 'designResult' in entity && entity.designResult && (
+                    <div className="space-y-3">
+                        <PropertyItem label="Utilization Ratio" value={entity.designResult.utilization} />
+                        <PropertyItem label="Status" value={entity.designResult.status} />
+                         <PropertyItem label="Governing Combination" value={entity.designResult.governingCombo} />
                     </div>
                 )}
             </div>
-            <div className="p-6 space-y-4 flex-1 overflow-y-auto">
-                <PropertyItem label="Member ID" value={member.id} />
-                <PropertyItem label="Mark" value={formData.mark || ''} editable={editMode} onChange={val => setFormData({...formData, mark: val})} />
-                <PropertyItem label="Type" value={member.type} />
-                <PropertyItem label="Level" value={member.level} />
-                <PropertyItem label="Dimensions" value={formData.dimensions || ''} editable={editMode} onChange={val => setFormData({...formData, dimensions: val})} />
-                <PropertyItem label="Reinforcement" value={formData.reinforcement || ''} editable={editMode} onChange={val => setFormData({...formData, reinforcement: val})} />
-                <PropertyItem label="Concrete Vol." value={`${member.concreteVol.toFixed(2)} m³`} />
-                <PropertyItem label="Steel Weight" value={`${member.steelWeight.toFixed(1)} kg`} />
-            </div>
         </div>
     );
 };
 
-const PropertyItem: React.FC<{label: string; value: string; editable?: boolean; onChange?: (val: string) => void}> = ({ label, value, editable, onChange }) => {
-    return (
-        <div>
-            <label className="block text-xs text-slate-500 font-medium mb-1">{label}</label>
-            {!editable ? (
-                <p className="text-sm text-slate-800 font-semibold bg-slate-50 p-2 rounded border border-slate-100">{value}</p>
-            ) : (
-                <input 
-                    type="text" 
-                    value={value}
-                    onChange={(e) => onChange && onChange(e.target.value)}
-                    className="w-full text-sm text-slate-800 font-semibold border-blue-300 border-2 p-1.5 rounded focus:outline-none"
-                />
-            )}
-        </div>
-    );
-};
+const PropertyItem: React.FC<{label: string; value: any}> = ({ label, value }) => (
+    <div>
+        <label className="block text-[10px] text-slate-500 font-bold uppercase">{label}</label>
+        <p className="text-sm text-slate-800 font-medium bg-slate-50 p-2 rounded">{value}</p>
+    </div>
+);
 
 export default PropertiesPanel;

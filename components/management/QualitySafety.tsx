@@ -1,7 +1,9 @@
 
+
 import React from 'react';
 import { ShieldCheck, HardHat, AlertTriangle, CheckSquare, Clock, Search } from 'lucide-react';
-import { QualityChecklist, SafetyStat } from '../../types';
+// FIX: Corrected import path from ../../types to ../../types/index to be explicit
+import { QualityChecklist, SafetyStat } from '../../types/index';
 
 interface QualitySafetyProps {
   checklists: QualityChecklist[];

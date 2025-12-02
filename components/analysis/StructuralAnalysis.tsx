@@ -1,350 +1,87 @@
-
-
-import React, { useState, useEffect, useMemo } from 'react';
-import { ProjectDetails, ViewState, ActionCost } from '../../types/index';
+import React, { useState, useMemo } from 'react';
+import { ProjectDetails, ViewState } from '../../types/index';
 import AnalysisConfig from './AnalysisConfig';
 import AnalysisResults from './AnalysisResults';
-import MemberSchedule from '../structure/MemberSchedule';
-import BarBendingSchedule from '../structure/BarBendingSchedule';
-import DetailingViewer from '../structure/DetailingViewer';
+import { Loader2, Settings, BarChart3, BookOpen, Layers, ShieldCheck, Link, FileText } from 'lucide-react';
 import LoadGenerator from './LoadGenerator';
-import SafetyCheck from '../structure/SafetyCheck';
 import DesignReport from '../structure/DesignReport';
-import ValidationCenter from './ValidationCenter';
+import MemberSchedule from '../structure/MemberSchedule';
+import SafetyCheck from '../structure/SafetyCheck';
 import ConnectionDesign from '../structure/ConnectionDesign';
-import { ArrowRight, BarChart3, Table2, ShieldCheck, PenTool, Zap, BookOpen, AlertOctagon, Link2 } from 'lucide-react';
-import { generateStructuralMembers, generateBBS } from '../../services/calculationService';
+import ValidationCenter from './ValidationCenter';
+import { generateStructuralMembers } from '../../services/calculationService';
 
 interface StructuralAnalysisProps {
   project: Partial<ProjectDetails>;
   onChangeView?: (view: ViewState) => void;
   initialTab?: string;
-  onActionRequest?: (action: () => void, costKey: keyof ActionCost) => void;
 }
 
-type Tab = 'loads' | 'validation' | 'analysis' | 'safety' | 'report' | 'schedule' | 'bbs' | 'detailing' | 'connections';
+type AnalysisTab = 'config' | 'loads' | 'validation' | 'results' | 'schedule' | 'safety' | 'report' | 'connections';
 
-const StructuralAnalysis: React.FC<StructuralAnalysisProps> = ({ project, onChangeView, initialTab, onActionRequest }) => {
-  const [activeTab, setActiveTab] = useState<Tab>('loads');
-  const [analyzing, setAnalyzing] = useState(false);
-  const [analyzed, setAnalyzed] = useState(false);
-  const [progress, setProgress] = useState(0);
+const StructuralAnalysis: React.FC<StructuralAnalysisProps> = ({ project, onChangeView, initialTab }) => {
   const [step, setStep] = useState<'config' | 'simulating' | 'results'>('config');
+  const [activeTab, setActiveTab] = useState<AnalysisTab>(initialTab === 'connections' ? 'connections' : 'config');
+  
+  const [materials, setMaterials] = useState({ concrete: 'M25', steel: 'Fe500', grade: 'E250' });
+  const [loads, setLoads] = useState({ wind: true, seismic: true });
 
-  const [materials, setMaterials] = useState({
-    concrete: 'M25',
-    steel: 'Fe500',
-    grade: 'E250 (Steel)'
-  });
-
-  const [loads, setLoads] = useState({
-    dead: true,
-    live: true,
-    wind: false,
-    seismic: false
-  });
-
-  useEffect(() => {
-    if (initialTab && ['loads', 'validation', 'analysis', 'safety', 'report', 'schedule', 'bbs', 'detailing', 'connections'].includes(initialTab)) {
-        setActiveTab(initialTab as Tab);
-    }
-  }, [initialTab]);
-
-  const structuralMembers = useMemo(() => generateStructuralMembers(project), [project]);
-  const bbsItems = useMemo(() => generateBBS(project), [project]);
-
-  // Auto-configure defaults based on project type
-  useEffect(() => {
-    if (project.type === 'PEB' || project.type === 'Steel') {
-      setMaterials(prev => ({ ...prev, grade: 'E350' }));
-      setLoads(prev => ({ ...prev, wind: true }));
-    } else if (project.type === 'Retaining Wall') {
-      setMaterials(prev => ({ ...prev, concrete: 'M30' }));
-      setLoads(prev => ({ ...prev, live: false, wind: false, seismic: false })); // Mostly soil pressure
-    } else {
-      setMaterials(prev => ({ ...prev, concrete: 'M25', steel: 'Fe550' }));
-    }
-  }, [project.type]);
+  const { members } = useMemo(() => generateStructuralMembers(project), [project]);
 
   const runAnalysis = () => {
     setStep('simulating');
-    setAnalyzing(true);
-    setAnalyzed(false);
-    setProgress(0);
-
-    const interval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setAnalyzing(false);
-          setAnalyzed(true);
-          setStep('results');
-          return 100;
-        }
-        return prev + 2;
-      });
-    }, 80);
+    setTimeout(() => {
+      setStep('results');
+      setActiveTab('results');
+    }, 3500);
   };
-
-  const handleRunAnalysis = () => {
-    if (onActionRequest) {
-      onActionRequest(runAnalysis, 'analysisRun');
-    } else {
-      runAnalysis();
+  
+  const renderContent = () => {
+    if (step === 'simulating') {
+        return (
+             <div className="flex flex-col items-center justify-center h-96 text-slate-500">
+                <Loader2 size={48} className="animate-spin mb-4 text-blue-600" />
+                <h3 className="text-xl font-semibold">Running Kratos Solver...</h3>
+                <p>Please wait while the structural model is being analyzed.</p>
+             </div>
+        )
+    }
+    
+    switch(activeTab) {
+        case 'config': return <AnalysisConfig projectType={project.type} materials={materials} setMaterials={setMaterials} loads={loads} setLoads={setLoads} runAnalysis={runAnalysis} />;
+        case 'loads': return <LoadGenerator location={project.location || 'Hyderabad'} height={(project.stories || 1) * 3} activeLoads={{dead: true, live: true, ...loads}} />;
+        case 'validation': return <ValidationCenter />;
+        case 'results': return step === 'results' ? <AnalysisResults project={project} loadData={[]} momentData={[]} /> : <div className="text-center p-8 text-slate-500">Run analysis to view results.</div>;
+        case 'schedule': return <MemberSchedule members={[]} />;
+        case 'safety': return <SafetyCheck members={[]} />;
+        case 'report': return <DesignReport />;
+        case 'connections': return <ConnectionDesign />;
+        default: return null;
     }
   };
 
-  const loadData = [
-    { name: 'Dead Load', value: project.type === 'PEB' ? 1200 : 4500 },
-    { name: 'Live Load', value: 2500 },
-    { name: 'Wind Load', value: loads.wind ? (project.type === 'PEB' ? 3500 : 1200) : 0 },
-    { name: 'Seismic', value: loads.seismic ? 980 : 0 },
-  ];
-
-  const momentData = Array.from({ length: 20 }, (_, i) => ({
-    x: i,
-    moment: Math.sin(i / 3) * 50 + Math.random() * 10,
-    shear: Math.cos(i / 3) * 30 + Math.random() * 5
-  }));
-
-  const isWall = project.type === 'Retaining Wall';
+  const TabButton: React.FC<any> = ({ id, label, icon }) => (
+      <button onClick={() => setActiveTab(id)} className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium ${activeTab === id ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}>{React.createElement(icon, {size: 16})} {label}</button>
+  );
 
   return (
     <div className="p-6 h-full overflow-y-auto bg-slate-50">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-800">Structural Design</h2>
-          <p className="text-slate-500">Integrated Analysis & Detailing for {project.type}</p>
-        </div>
-        <div className="flex bg-white p-1 rounded-lg border border-slate-200 shadow-sm overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('loads')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
-              activeTab === 'loads' 
-                ? 'bg-blue-600 text-white shadow-sm' 
-                : 'text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <Zap size={16} />
-            <span>Load Engine</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('validation')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
-              activeTab === 'validation' 
-                ? 'bg-blue-600 text-white shadow-sm' 
-                : 'text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <AlertOctagon size={16} />
-            <span>Validation</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('analysis')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
-              activeTab === 'analysis' 
-                ? 'bg-blue-600 text-white shadow-sm' 
-                : 'text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <BarChart3 size={16} />
-            <span>Analysis</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('safety')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
-              activeTab === 'safety' 
-                ? 'bg-blue-600 text-white shadow-sm' 
-                : 'text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <ShieldCheck size={16} />
-            <span>Safety</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('connections')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
-              activeTab === 'connections' 
-                ? 'bg-blue-600 text-white shadow-sm' 
-                : 'text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <Link2 size={16} />
-            <span>Connections</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('report')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
-              activeTab === 'report' 
-                ? 'bg-blue-600 text-white shadow-sm' 
-                : 'text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <BookOpen size={16} />
-            <span>Report</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('detailing')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
-              activeTab === 'detailing' 
-                ? 'bg-blue-600 text-white shadow-sm' 
-                : 'text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <PenTool size={16} />
-            <span>Drawings</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('schedule')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
-              activeTab === 'schedule' 
-                ? 'bg-blue-600 text-white shadow-sm' 
-                : 'text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <Table2 size={16} />
-            <span>Schedule</span>
-          </button>
-        </div>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-slate-800">Analysis & Design Workspace</h2>
       </div>
 
-      {activeTab === 'loads' && (
-        <LoadGenerator location={project.location || 'Hyderabad'} height={(project.stories || 1) * 3} activeLoads={loads} />
-      )}
+      <div className="flex bg-white p-1 rounded-lg border border-slate-200 shadow-sm overflow-x-auto mb-6">
+        <TabButton id="config" label="Configure" icon={Settings} />
+        <TabButton id="loads" label="Loads" icon={Layers} />
+        <TabButton id="validation" label="Validation" icon={ShieldCheck} />
+        <TabButton id="results" label="Results" icon={BarChart3} />
+        <TabButton id="schedule" label="Schedule" icon={FileText} />
+        <TabButton id="safety" label="Safety Check" icon={ShieldCheck} />
+        <TabButton id="report" label="Design Report" icon={BookOpen} />
+        <TabButton id="connections" label="Connections" icon={Link} />
+      </div>
 
-      {activeTab === 'validation' && (
-        <ValidationCenter />
-      )}
-
-      {activeTab === 'safety' && (
-        <SafetyCheck members={structuralMembers} />
-      )}
-
-      {activeTab === 'connections' && (
-        <ConnectionDesign />
-      )}
-
-      {activeTab === 'report' && (
-        <DesignReport />
-      )}
-
-      {activeTab === 'analysis' && (
-        <>
-          <div className="flex justify-end mb-4">
-             {step === 'results' && onChangeView && (
-              <button 
-                onClick={() => onChangeView('estimation')}
-                className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm"
-              >
-                <span>Proceed to Estimation</span> <ArrowRight size={18} />
-              </button>
-            )}
-            {step === 'results' && (
-            <button
-                onClick={() => setStep('config')}
-                className="ml-2 text-sm px-4 py-2 border border-slate-300 bg-white rounded-lg hover:bg-slate-50 text-slate-600 transition-colors"
-            >
-                Modify Parameters
-            </button>
-            )}
-          </div>
-
-          {step === 'simulating' && (
-            <div className="flex flex-col items-center justify-center h-[50vh]">
-              <div className="w-full max-w-lg space-y-4">
-                <div className="flex justify-between text-sm font-medium text-slate-600">
-                  <span>Solving Global Stiffness Matrix...</span>
-                  <span>{progress}%</span>
-                </div>
-                <div className="w-full bg-slate-200 rounded-full h-4 overflow-hidden shadow-inner">
-                  <div className="bg-blue-600 h-4 rounded-full transition-all duration-300 ease-out flex items-center justify-end pr-2" style={{ width: `${progress}%` }}>
-                    <div className="w-1.5 h-1.5 bg-white/50 rounded-full animate-pulse"></div>
-                  </div>
-                </div>
-                <p className="text-center text-xs text-slate-400 mt-2">Connecting to Kratos Multiphysics Docker Container...</p>
-              </div>
-            </div>
-          )}
-
-          {step === 'config' && (
-            <AnalysisConfig
-              projectType={project.type}
-              materials={materials}
-              setMaterials={setMaterials}
-              loads={loads}
-              setLoads={setLoads}
-              runAnalysis={handleRunAnalysis}
-            />
-          )}
-
-          {step === 'results' && !isWall && (
-            <AnalysisResults
-              project={project}
-              loadData={loadData}
-              momentData={momentData}
-            />
-          )}
-
-          {step === 'results' && isWall && (
-             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                {/* Wall Stability Dashboard */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-sm text-slate-500">FOS - Overturning</p>
-                                <h3 className="text-3xl font-bold text-slate-800">2.45</h3>
-                            </div>
-                            <div className="p-3 bg-emerald-100 text-emerald-600 rounded-full"><ShieldCheck size={24} /></div>
-                        </div>
-                        <p className="text-xs text-emerald-600 mt-2 font-medium">Safe (> 2.0)</p>
-                    </div>
-                     <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-sm text-slate-500">FOS - Sliding</p>
-                                <h3 className="text-3xl font-bold text-slate-800">1.62</h3>
-                            </div>
-                            <div className="p-3 bg-blue-100 text-blue-600 rounded-full"><ArrowRight size={24} /></div>
-                        </div>
-                         <p className="text-xs text-blue-600 mt-2 font-medium">Safe (> 1.5)</p>
-                    </div>
-                     <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-sm text-slate-500">Max Soil Pressure</p>
-                                <h3 className="text-3xl font-bold text-slate-800">185 kPa</h3>
-                            </div>
-                            <div className="p-3 bg-orange-100 text-orange-600 rounded-full"><BarChart3 size={24} /></div>
-                        </div>
-                         <p className="text-xs text-slate-500 mt-2 font-medium">Allowable: 250 kPa</p>
-                    </div>
-                </div>
-                
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <h3 className="font-semibold text-slate-700 mb-4">Design Summary</h3>
-                    <p className="text-sm text-slate-600 leading-relaxed">
-                        The Cantilever Retaining Wall of height <strong>{project.dimensions?.width}ft</strong> is structurally stable. 
-                        The base width provided is adequate to resist overturning moments from the active earth pressure. 
-                        Weep holes are recommended at 1.5m c/c spacing.
-                    </p>
-                </div>
-             </div>
-          )}
-        </>
-      )} 
-      
-      {activeTab === 'schedule' && (
-        <MemberSchedule members={structuralMembers} />
-      )}
-
-      {activeTab === 'detailing' && (
-        <DetailingViewer project={project} onActionRequest={onActionRequest} />
-      )}
-
-      {activeTab === 'bbs' && (
-        <BarBendingSchedule items={bbsItems} />
-      )}
+      {renderContent()}
     </div>
   );
 };

@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { ProjectDetails, ViewState } from '../../types/index';
 import { Printer, Download, ArrowRight, Eye, List } from 'lucide-react';

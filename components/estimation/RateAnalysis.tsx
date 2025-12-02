@@ -1,8 +1,10 @@
 
+
 import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Calculator, Hammer, Truck, Package } from 'lucide-react';
-import { RateAnalysisItem } from '../../types';
+// FIX: Corrected import path from ../../types to ../../types/index to be explicit
+import { RateAnalysisItem } from '../../types/index';
 
 interface RateAnalysisProps {
   analysis: RateAnalysisItem[];

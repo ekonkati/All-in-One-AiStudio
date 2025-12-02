@@ -1,7 +1,7 @@
-
 import React, { useState, useMemo } from 'react';
 import { BrainCircuit, CheckCircle2, DollarSign, Layers, Zap, Loader2 } from 'lucide-react';
-import { ProjectDetails, OptimizationSuggestion } from '../../types';
+// FIX: Corrected import path from ../../types to ../../types/index to resolve module resolution error.
+import { ProjectDetails, OptimizationSuggestion } from '../../types/index';
 import { calculateProjectStats, generateOptimizations } from '../../services/calculationService';
 
 interface OptimizationCenterProps {

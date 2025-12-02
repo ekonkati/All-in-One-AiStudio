@@ -1,7 +1,9 @@
 
+
 import React, { useMemo, useState } from 'react';
 import { DollarSign, FileText, Download, TrendingUp, AlertCircle, CheckCircle2, BookOpen } from 'lucide-react';
-import { RABill, FinancialStats, ProjectDetails } from '../../types';
+// FIX: Corrected import path from ../../types to ../../types/index to be explicit
+import { RABill, FinancialStats, ProjectDetails } from '../../types/index';
 import { generateMeasurementBook } from '../../services/calculationService';
 import MeasurementBook from './MeasurementBook';
 

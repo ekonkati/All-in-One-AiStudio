@@ -1,69 +1,27 @@
 
-
 import React, { useState, useEffect } from 'react';
-import Sidebar from './components/Sidebar';
-import ChatInterface from './components/ChatInterface';
-import ProjectDashboard from './components/ProjectDashboard';
-import LayoutViewer from './components/LayoutViewer';
-import StructuralAnalysis from './components/StructuralAnalysis';
-import EstimationView from './components/EstimationView';
-import ProjectManagement from './components/ProjectManagement';
+import Sidebar from './components/sidebar/Sidebar';
+import ChatInterface from './components/chat/ChatInterface';
+import ProjectDashboard from './components/dashboard/ProjectDashboard';
+import ModelEditor from './components/modeler/ModelEditor';
+import StructuralAnalysis from './components/analysis/StructuralAnalysis';
+import EstimationView from './components/estimation/EstimationView';
+import ProjectManagement from './components/management/ProjectManagement';
 import Procurement from './components/commercial/Procurement';
 import Reports from './components/general/Reports';
 import Settings from './components/general/Settings';
 import Subscription from './components/general/Subscription';
 import DataExchange from './components/general/DataExchange';
 import Portfolio from './components/dashboard/Portfolio';
-import Auth from './components/Auth';
+import Auth from './components/auth/Auth';
 import OptimizationCenter from './components/general/OptimizationCenter';
 import GlobalSearch from './components/general/GlobalSearch';
 import AiDesignStudio from './components/general/AiDesignStudio';
-import { ViewState, ProjectDetails, UserRole } from './types';
-import { Menu, Search } from 'lucide-react';
+import { ViewState, ProjectDetails, UserRole, StructuralMember, ActionCost } from './types/index';
+import Header from './components/common/Header';
+import { generateStructuralMembers, updateMemberProperty, getActionCosts } from './services/calculationService';
+import ConfirmationModal from './components/common/ConfirmationModal';
 
-// New Header Component for User Role Switching
-const Header: React.FC<{ 
-    userRole: UserRole, 
-    setUserRole: (role: UserRole) => void,
-    onSearchClick: () => void 
-}> = ({ userRole, setUserRole, onSearchClick }) => {
-    return (
-        <div className="bg-white border-b border-slate-200 p-4 flex items-center justify-between flex-shrink-0">
-            <div className="flex items-center">
-                <button onClick={() => (window as any).toggleSidebar()} className="mr-4 text-slate-600 lg:hidden">
-                    <Menu size={24} />
-                </button>
-                <span className="font-bold text-slate-800 lg:hidden">StructurAI</span>
-            </div>
-
-            <div className="flex-1 flex justify-center px-4">
-                <button 
-                    onClick={onSearchClick}
-                    className="w-full max-w-lg bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 flex items-center justify-between text-slate-500 hover:bg-slate-100 hover:border-slate-300 transition-colors"
-                >
-                    <div className="flex items-center gap-2">
-                        <Search size={16} />
-                        <span className="text-sm">Search members, documents, actions...</span>
-                    </div>
-                    <span className="text-xs border border-slate-300 rounded px-1.5 py-0.5">Ctrl K</span>
-                </button>
-            </div>
-
-            <div className="flex items-center gap-4">
-                <span className="text-sm text-slate-500 hidden md:block">Viewing as:</span>
-                 <select 
-                    value={userRole} 
-                    onChange={(e) => setUserRole(e.target.value as UserRole)}
-                    className="bg-slate-100 border border-slate-200 rounded-md px-3 py-1 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                     <option value="Engineer">Engineer</option>
-                     <option value="Client">Client</option>
-                     <option value="Admin">Admin</option>
-                 </select>
-            </div>
-        </div>
-    );
-};
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -71,8 +29,11 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>('Engineer');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [tokenBalance, setTokenBalance] = useState(5000);
+  const [actionToConfirm, setActionToConfirm] = useState<{ action: () => void; costKey: keyof ActionCost } | null>(null);
   
-  // App State - Seeded with realistic data for preview
+  const actionCosts = getActionCosts();
+  
   const initialStartDate = new Date();
   initialStartDate.setDate(initialStartDate.getDate() - 42); 
 
@@ -81,7 +42,7 @@ const App: React.FC = () => {
     name: 'G+3 Commercial Complex',
     type: 'RCC',
     location: 'Hyderabad, Hitech City',
-    dimensions: { length: 60, width: 40 }, // 2400 sft footprint
+    dimensions: { length: 60, width: 40 },
     stories: 4,
     soilType: 'Medium Stiff Clay',
     status: 'Construction',
@@ -90,6 +51,48 @@ const App: React.FC = () => {
   };
 
   const [project, setProject] = useState<Partial<ProjectDetails> | null>(demoProject);
+  
+  const [structuralMembers, setStructuralMembers] = useState<StructuralMember[]>([]);
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (project) {
+        setStructuralMembers(generateStructuralMembers(project));
+        setSelectedMemberId(null);
+    } else {
+        setStructuralMembers([]);
+    }
+  }, [project]);
+
+  const handleUpdateMember = (id: string, newProps: Partial<StructuralMember>) => {
+      const updatedMember = updateMemberProperty(structuralMembers.find(m => m.id === id)!, newProps);
+      setStructuralMembers(prevMembers => 
+        prevMembers.map(m => m.id === id ? updatedMember : m)
+      );
+  };
+
+  const handleActionRequest = (action: () => void, costKey: keyof ActionCost) => {
+    const cost = actionCosts[costKey];
+    if (tokenBalance >= cost) {
+      setActionToConfirm({ action, costKey });
+    } else {
+      alert("Insufficient credits. Please upgrade your plan.");
+      setCurrentView('subscription');
+    }
+  };
+
+  const confirmAction = () => {
+    if (actionToConfirm) {
+      const cost = actionCosts[actionToConfirm.costKey];
+      setTokenBalance(prev => prev - cost);
+      actionToConfirm.action();
+    }
+    cancelAction();
+  };
+
+  const cancelAction = () => {
+    setActionToConfirm(null);
+  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -102,11 +105,8 @@ const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-
-  // Expose sidebar toggle to global scope for header button
   (window as any).toggleSidebar = () => setIsSidebarOpen(true);
 
-  // Template System Logic (Part 12)
   const switchTemplate = (type: any) => {
       let newDetails: Partial<ProjectDetails> = {
           id: `PRJ-${new Date().getFullYear()}-${Math.floor(Math.random()*1000)}`,
@@ -159,21 +159,30 @@ const App: React.FC = () => {
       case 'chat':
         return <ChatInterface onProjectUpdate={handleProjectUpdate} project={project} />;
       case 'layout':
-        return project ? <LayoutViewer project={project} onChangeView={setCurrentView} /> : null;
+        return project ? (
+            <ModelEditor 
+                project={project} 
+                members={structuralMembers}
+                selectedMemberId={selectedMemberId}
+                onSelectMember={setSelectedMemberId}
+                onUpdateMember={handleUpdateMember}
+                onRunAnalysis={() => handleActionRequest(() => setCurrentView('structure'), 'analysisRun')}
+            />
+        ) : null;
       case 'structure':
-        return project ? <StructuralAnalysis project={project} onChangeView={setCurrentView} /> : null;
+        return project ? <StructuralAnalysis project={project} onChangeView={setCurrentView} onActionRequest={handleActionRequest} /> : null;
       case 'connections':
-        return project ? <StructuralAnalysis project={project} onChangeView={setCurrentView} initialTab="connections" /> : null;
+        return project ? <StructuralAnalysis project={project} onChangeView={setCurrentView} initialTab="connections" onActionRequest={handleActionRequest} /> : null;
       case 'estimation':
         return project ? <EstimationView project={project} onChangeView={setCurrentView} /> : null;
       case 'procurement':
         return project ? <Procurement project={project} /> : null;
       case 'management':
-        return project ? <ProjectManagement project={project} onChangeView={setCurrentView} initialTab="execution" /> : null;
+        return project ? <ProjectManagement project={project} onChangeView={setCurrentView} initialTab="execution" onActionRequest={handleActionRequest} /> : null;
       case 'digital-twin':
-        return project ? <ProjectManagement project={project} onChangeView={setCurrentView} initialTab="monitoring" /> : null;
+        return project ? <ProjectManagement project={project} onChangeView={setCurrentView} initialTab="monitoring" onActionRequest={handleActionRequest} /> : null;
       case 'closure':
-        return project ? <ProjectManagement project={project} onChangeView={setCurrentView} initialTab="closure" /> : null;
+        return project ? <ProjectManagement project={project} onChangeView={setCurrentView} initialTab="closure" onActionRequest={handleActionRequest} /> : null;
       case 'reports':
         return project ? <Reports project={project} /> : null;
       case 'settings':
@@ -197,12 +206,14 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-100">
+      {actionToConfirm && <ConfirmationModal cost={actionCosts[actionToConfirm.costKey]} onConfirm={confirmAction} onCancel={cancelAction} />}
       <GlobalSearch 
         isOpen={isSearchOpen} 
         onClose={() => setIsSearchOpen(false)} 
         project={project}
         onNavigate={(view) => {
             setCurrentView(view);
+            setIsSearchOpen(false);
         }}
       />
 
@@ -228,6 +239,8 @@ const App: React.FC = () => {
             userRole={currentUserRole} 
             setUserRole={setCurrentUserRole} 
             onSearchClick={() => setIsSearchOpen(true)}
+            tokenBalance={tokenBalance}
+            onUpgradeClick={() => setCurrentView('subscription')}
         />
 
         <main className="flex-1 overflow-hidden relative">

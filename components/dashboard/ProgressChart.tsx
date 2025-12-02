@@ -1,8 +1,9 @@
 
+
 import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { ArrowRight } from 'lucide-react';
-import { ViewState } from '../../types';
+import { ViewState } from '../../types/index';
 
 interface ProgressChartProps {
   totalProgress: number;

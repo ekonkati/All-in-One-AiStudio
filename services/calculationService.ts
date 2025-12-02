@@ -1,6 +1,6 @@
 
 
-import { ProjectDetails, BOQItem, PhaseItem, TaskItem, DocumentItem, RABill, FinancialStats, StructuralMember, QualityChecklist, SafetyStat, RateAnalysisItem, Vendor, PurchaseOrder, ReportItem, RFQ, SitePhoto, MeasurementEntry, BBSItem, ComplianceCheck, ImportJob, DesignCalcStep, SensorData, ConstructionRisk, Plugin, ValidationIssue, InventoryItem, MEPItem, ProjectSummary, ApprovalRequest, ConnectionResult, ClosureDocument, AuditLog, SystemStatus, OptimizationSuggestion, EngineeringStatusKPI, ProcurementKPI, SafetyKPI, SearchResult, AiDesignStep } from '../types';
+import { ProjectDetails, BOQItem, PhaseItem, TaskItem, DocumentItem, RABill, FinancialStats, StructuralMember, QualityChecklist, SafetyStat, RateAnalysisItem, Vendor, PurchaseOrder, ReportItem, RFQ, SitePhoto, MeasurementEntry, BBSItem, ComplianceCheck, ImportJob, DesignCalcStep, SensorData, ConstructionRisk, Plugin, ValidationIssue, InventoryItem, MEPItem, ProjectSummary, ApprovalRequest, ConnectionResult, ClosureDocument, AuditLog, SystemStatus, OptimizationSuggestion, EngineeringStatusKPI, ProcurementKPI, SafetyKPI, SearchResult, AiDesignStep, ActionCost } from '../types/index';
 import { LayoutDashboard, HardHat, FileText, CheckSquare, Users } from 'lucide-react';
 
 
@@ -21,6 +21,7 @@ const getStructuralModel = (project: Partial<ProjectDetails>) => {
 };
 
 export const generateStructuralMembers = (project: Partial<ProjectDetails>): StructuralMember[] => {
+  if (!project || !project.dimensions) return [];
   const { totalCols, totalBeamsPerFloor, stories } = getStructuralModel(project);
   const isPEB = project.type === 'PEB' || project.type === 'Steel';
   const isRetainingWall = project.type === 'Retaining Wall';
@@ -60,6 +61,13 @@ export const generateStructuralMembers = (project: Partial<ProjectDetails>): Str
   return members;
 };
 
+// New function for 3D modeler interactivity
+export const updateMemberProperty = (member: StructuralMember, newProps: Partial<StructuralMember>): StructuralMember => {
+    // In a real app, this would perform engineering calculations (e.g., re-calculate volume)
+    // For now, we just merge the properties.
+    return { ...member, ...newProps };
+};
+
 export const generateDesignCalculation = (memberType: string): DesignCalcStep[] => {
   if (memberType === 'Beam') {
     return [
@@ -81,7 +89,7 @@ export const generateDesignCalculation = (memberType: string): DesignCalcStep[] 
 
 export const generateBBS = (project: Partial<ProjectDetails>): BBSItem[] => {
     const isPEB = project.type === 'PEB' || project.type === 'Steel';
-    if (isPEB || project.type === 'Landfill') return [];
+    if (isPEB || project.type === 'Landfill' || !project.dimensions) return [];
     const members = generateStructuralMembers(project);
     const bbs: BBSItem[] = [];
     const unitWeights: Record<number, number> = { 8: 0.395, 10: 0.617, 12: 0.888, 16: 1.58, 20: 2.47, 25: 3.85 };
@@ -105,6 +113,7 @@ export const generateBBS = (project: Partial<ProjectDetails>): BBSItem[] => {
 };
 
 export const calculateProjectStats = (project: Partial<ProjectDetails>) => {
+  if (!project.dimensions) return { area: 0, footprint: 0, ratePerSqFt: 0, estimatedCost: 0, duration: 0 };
   const length = project.dimensions?.length || 0;
   const width = project.dimensions?.width || 0;
   const stories = project.stories || 1;
@@ -126,6 +135,7 @@ export const calculateProjectStats = (project: Partial<ProjectDetails>) => {
 };
 
 export const generateBOQ = (project: Partial<ProjectDetails>): BOQItem[] => {
+  if (!project.dimensions) return [];
   const stories = project.stories || 1;
   const area = (project.dimensions?.length || 0) * (project.dimensions?.width || 0) * stories;
   const members = generateStructuralMembers(project);
@@ -414,7 +424,15 @@ export const generateMISData = (project: Partial<ProjectDetails>): { eng: Engine
     }
 };
 
-export const globalSearch = (query: string, project: Partial<ProjectDetails>): SearchResult[] => {
+export const getActionCosts = (): ActionCost => {
+    return {
+        analysisRun: 50,
+        drawingSheet: 10,
+        handoverDossier: 100
+    };
+};
+
+export const globalSearch = (query: string, project: Partial<ProjectDetails> | null): SearchResult[] => {
     const results: SearchResult[] = [];
     const lowerQuery = query.toLowerCase();
 
@@ -451,7 +469,7 @@ export const globalSearch = (query: string, project: Partial<ProjectDetails>): S
                     title: `${member.mark} (${member.type})`,
                     description: `Level: ${member.level} | Size: ${member.dimensions}`,
                     category: 'Member',
-                    view: 'structure', // navigate to structure view
+                    view: 'layout', // navigate to modeler view
                     icon: HardHat
                 });
             }
@@ -488,6 +506,7 @@ export const globalSearch = (query: string, project: Partial<ProjectDetails>): S
 
     return results.slice(0, 10); // Limit results
 };
+
 
 // Part 39: AI Design Studio
 export const getAiDesignFlow = (): AiDesignStep[] => {

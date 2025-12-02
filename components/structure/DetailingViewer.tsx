@@ -1,13 +1,13 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Download, Maximize, ZoomIn, ZoomOut, Grid, Layout, FileType, Loader2 } from 'lucide-react';
-import { ProjectDetails } from '../../types';
+import { ProjectDetails, ActionCost } from '../../types/index';
 
 interface DetailingViewerProps {
   project: Partial<ProjectDetails>;
+  onActionRequest?: (action: () => void, costKey: keyof ActionCost) => void;
 }
 
-const DetailingViewer: React.FC<DetailingViewerProps> = ({ project }) => {
+const DetailingViewer: React.FC<DetailingViewerProps> = ({ project, onActionRequest }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [currentSheet, setCurrentSheet] = useState<string>('GA-01');
   const [isExporting, setIsExporting] = useState(false);
@@ -20,13 +20,20 @@ const DetailingViewer: React.FC<DetailingViewerProps> = ({ project }) => {
       { id: 'ST-01', title: 'Staircase Section' }
   ];
 
-  // Mock Export Function
-  const handleExport = () => {
+  const exportAction = () => {
       setIsExporting(true);
       setTimeout(() => {
           setIsExporting(false);
           alert("Drawing Package (PDF + DXF) generated successfully!");
       }, 2000);
+  };
+
+  const handleExport = () => {
+    if (onActionRequest) {
+      onActionRequest(exportAction, 'drawingSheet');
+    } else {
+      exportAction();
+    }
   };
 
   // Drawing Logic (Simplified for demo)

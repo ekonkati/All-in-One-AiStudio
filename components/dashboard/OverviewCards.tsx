@@ -1,7 +1,8 @@
 
+
 import React from 'react';
 import { Building, MapPin, Calendar, AlertCircle } from 'lucide-react';
-import { ProjectDetails } from '../../types';
+import { ProjectDetails } from '../../types/index';
 
 interface OverviewCardsProps {
   project: Partial<ProjectDetails>;

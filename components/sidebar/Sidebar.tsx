@@ -27,7 +27,7 @@ import {
   Sparkles,
   View
 } from 'lucide-react';
-import { ViewState, ProjectDetails, UserRole } from '../types';
+import { ViewState, ProjectDetails, UserRole } from '../../types/index';
 
 interface SidebarProps {
   currentView: ViewState;

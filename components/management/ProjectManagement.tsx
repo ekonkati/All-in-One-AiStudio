@@ -2,32 +2,31 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { FileText, Calendar, HardHat, DollarSign, ShieldCheck, Image, PlayCircle, Activity, Plus, UserCheck, Lock } from 'lucide-react';
-import { ProjectDetails, ViewState, ActionCost } from '../types';
-import { generateSchedule, generateDocuments, generateFinancials, generateQualityData, generateSitePhotos } from '../services/calculationService';
-import GanttChart from './management/GanttChart';
-import SiteResources from './management/SiteResources';
-import TaskList from './management/TaskList';
-import DocumentList from './management/DocumentList';
-import Financials from './management/Financials';
-import QualitySafety from './management/QualitySafety';
-import SiteGallery from './management/SiteGallery';
-import ConstructionSequence from './management/ConstructionSequence';
-import Monitoring from './management/Monitoring';
-import DailyLogForm from './management/DailyLogForm';
-import ApprovalCenter from './management/ApprovalCenter';
-import ProjectClosure from './management/ProjectClosure';
+import { ProjectDetails, ViewState, ActionCost } from '../../types/index';
+import { generateSchedule, generateDocuments, generateFinancials, generateQualityData, generateSitePhotos } from '../../services/calculationService';
+import GanttChart from './GanttChart';
+import SiteResources from './SiteResources';
+import TaskList from './TaskList';
+import DocumentList from './DocumentList';
+import Financials from './Financials';
+import QualitySafety from './QualitySafety';
+import SiteGallery from './SiteGallery';
+import ConstructionSequence from './ConstructionSequence';
+import Monitoring from './Monitoring';
+import DailyLogForm from './DailyLogForm';
+import ApprovalCenter from './ApprovalCenter';
+import ProjectClosure from './ProjectClosure';
 
 interface ProjectManagementProps {
   project: Partial<ProjectDetails>;
   onChangeView?: (view: ViewState) => void;
   initialTab?: string;
-  // FIX: Add onActionRequest prop to match what's passed from App.tsx
   onActionRequest?: (action: () => void, costKey: keyof ActionCost) => void;
 }
 
 type ManagementTab = 'execution' | 'simulation' | 'financials' | 'quality' | 'gallery' | 'monitoring' | 'approvals' | 'closure';
 
-const ProjectManagement: React.FC<ProjectManagementProps> = ({ project, onChangeView, initialTab }) => {
+const ProjectManagement: React.FC<ProjectManagementProps> = ({ project, onChangeView, initialTab, onActionRequest }) => {
   const [activeTab, setActiveTab] = useState<ManagementTab>('execution');
   const [showLogForm, setShowLogForm] = useState(false);
 
@@ -190,7 +189,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ project, onChange
       )}
 
       {activeTab === 'closure' && (
-        <ProjectClosure />
+        <ProjectClosure onActionRequest={onActionRequest} />
       )}
 
       {/* Modal Form */}

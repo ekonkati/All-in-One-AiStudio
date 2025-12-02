@@ -1,7 +1,7 @@
 
 
 import React from 'react';
-import { ProjectDetails, ViewState } from '../../types';
+import { ProjectDetails, ViewState } from '../../types/index';
 import { BrainCircuit } from 'lucide-react';
 
 interface AiInsightsProps {

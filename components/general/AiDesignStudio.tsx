@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Bot, User, Send, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import { AiDesignStep, ViewState, ProjectDetails } from '../../types';
@@ -77,7 +78,7 @@ const AiDesignStudio: React.FC<AiDesignStudioProps> = ({ onProjectCreated, setVi
         const current = flow[index];
         if (current.action === 'GENERATE') {
             if (current.payload.type === 'finalize') {
-                 // Final step, create project and navigate
+                 // Final step, create project and navigate to the 3D modeler
                  const projectDetails: Partial<ProjectDetails> = {
                     name: 'AI Generated G+2',
                     type: 'RCC',
@@ -86,7 +87,7 @@ const AiDesignStudio: React.FC<AiDesignStudioProps> = ({ onProjectCreated, setVi
                     dimensions: { length: 60, width: 40 }
                  };
                  onProjectCreated(projectDetails);
-                 setTimeout(() => setView('dashboard'), 1500);
+                 setTimeout(() => setView('layout'), 1500); // Navigate to 'layout' which is now the 3D modeler
             } else {
                  setDrawingState((prev: any) => ({ ...prev, [current.payload.type]: current.payload }));
                  processFlow(index + 1);

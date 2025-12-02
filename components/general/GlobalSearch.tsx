@@ -16,7 +16,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, project, o
   const inputRef = useRef<HTMLInputElement>(null);
 
   const results = useMemo(() => {
-    if (!query || !project) return [];
+    if (!query) return [];
     return globalSearch(query, project);
   }, [query, project]);
 
@@ -28,7 +28,6 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, project, o
 
   useEffect(() => {
     if (isOpen) {
-        // Delay focus to allow for transition
         setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [isOpen]);
@@ -42,11 +41,11 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, project, o
       }
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setSelectedIndex(prev => Math.min(prev + 1, results.length - 1));
+        setSelectedIndex(prev => (results.length > 0 ? (prev + 1) % results.length : 0));
       }
       if (e.key === 'ArrowUp') {
         e.preventDefault();
-        setSelectedIndex(prev => Math.max(prev - 1, 0));
+        setSelectedIndex(prev => (results.length > 0 ? (prev - 1 + results.length) % results.length : 0));
       }
       if (e.key === 'Enter' && results[selectedIndex]) {
         handleSelect(results[selectedIndex]);
@@ -55,6 +54,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, project, o
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, results, selectedIndex, onClose, onNavigate]);
+
 
   if (!isOpen) {
     return null;
@@ -74,15 +74,16 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, project, o
               setSelectedIndex(0);
             }}
             placeholder="Search members, documents, actions..."
-            className="w-full focus:outline-none text-lg text-slate-700"
+            className="w-full focus:outline-none text-lg text-slate-700 bg-transparent"
           />
         </div>
         
-        {results.length > 0 && (
+        {results.length > 0 ? (
           <div className="max-h-96 overflow-y-auto">
             {results.map((result, index) => (
               <div
                 key={result.id}
+                onMouseEnter={() => setSelectedIndex(index)}
                 onClick={() => handleSelect(result)}
                 className={`p-4 flex items-center justify-between cursor-pointer ${
                   selectedIndex === index ? 'bg-blue-50' : 'hover:bg-slate-50'
@@ -102,13 +103,18 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, project, o
               </div>
             ))}
           </div>
-        )}
-
-        {query && results.length === 0 && (
+        ) : query && (
             <div className="p-16 text-center text-slate-500">
                 <p>No results found for "{query}"</p>
+                <p className="text-xs mt-2">Try searching for a member (e.g., 'B1'), a document, or a module (e.g., 'reports').</p>
             </div>
         )}
+
+         {!query && (
+            <div className="p-6 text-center text-slate-400 text-sm">
+                <p>Start typing to search across the entire project.</p>
+            </div>
+         )}
       </div>
     </div>
   );

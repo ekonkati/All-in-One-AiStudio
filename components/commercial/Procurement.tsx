@@ -1,7 +1,8 @@
 
+
 import React, { useMemo, useState } from 'react';
 import { ShoppingCart, Users, Package, Truck, Search, Plus, Filter, FileText, Gavel, ArrowRight, Calculator } from 'lucide-react';
-import { ProjectDetails } from '../../types';
+import { ProjectDetails } from '../../types/index';
 import { generateProcurementData } from '../../services/calculationService';
 import PurchaseOrderForm from './PurchaseOrderForm';
 import BillGenerator from './BillGenerator';

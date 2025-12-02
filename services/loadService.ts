@@ -1,5 +1,4 @@
-
-import { WindParams, SeismicParams, LoadCombination } from '../types';
+import { WindParams, SeismicParams, LoadCombination } from '../types/index';
 
 // Database of Basic Wind Speeds (IS 875 Part 3 - 2015)
 const cityWindSpeeds: Record<string, number> = {

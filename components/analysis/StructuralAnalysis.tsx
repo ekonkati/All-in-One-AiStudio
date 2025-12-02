@@ -1,31 +1,30 @@
 
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { ProjectDetails, ViewState, ActionCost } from '../types';
-import AnalysisConfig from './analysis/AnalysisConfig';
-import AnalysisResults from './analysis/AnalysisResults';
-import MemberSchedule from './structure/MemberSchedule';
-import BarBendingSchedule from './structure/BarBendingSchedule';
-import DetailingViewer from './structure/DetailingViewer';
-import LoadGenerator from './analysis/LoadGenerator';
-import SafetyCheck from './structure/SafetyCheck';
-import DesignReport from './structure/DesignReport';
-import ValidationCenter from './analysis/ValidationCenter';
-import ConnectionDesign from './structure/ConnectionDesign';
+import { ProjectDetails, ViewState, ActionCost } from '../../types/index';
+import AnalysisConfig from './AnalysisConfig';
+import AnalysisResults from './AnalysisResults';
+import MemberSchedule from '../structure/MemberSchedule';
+import BarBendingSchedule from '../structure/BarBendingSchedule';
+import DetailingViewer from '../structure/DetailingViewer';
+import LoadGenerator from './LoadGenerator';
+import SafetyCheck from '../structure/SafetyCheck';
+import DesignReport from '../structure/DesignReport';
+import ValidationCenter from './ValidationCenter';
+import ConnectionDesign from '../structure/ConnectionDesign';
 import { ArrowRight, BarChart3, Table2, ShieldCheck, PenTool, Zap, BookOpen, AlertOctagon, Link2 } from 'lucide-react';
-import { generateStructuralMembers, generateBBS } from '../services/calculationService';
+import { generateStructuralMembers, generateBBS } from '../../services/calculationService';
 
 interface StructuralAnalysisProps {
   project: Partial<ProjectDetails>;
   onChangeView?: (view: ViewState) => void;
   initialTab?: string;
-  // FIX: Add onActionRequest prop to match what's passed from App.tsx
   onActionRequest?: (action: () => void, costKey: keyof ActionCost) => void;
 }
 
 type Tab = 'loads' | 'validation' | 'analysis' | 'safety' | 'report' | 'schedule' | 'bbs' | 'detailing' | 'connections';
 
-const StructuralAnalysis: React.FC<StructuralAnalysisProps> = ({ project, onChangeView, initialTab }) => {
+const StructuralAnalysis: React.FC<StructuralAnalysisProps> = ({ project, onChangeView, initialTab, onActionRequest }) => {
   const [activeTab, setActiveTab] = useState<Tab>('loads');
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzed, setAnalyzed] = useState(false);
@@ -85,6 +84,14 @@ const StructuralAnalysis: React.FC<StructuralAnalysisProps> = ({ project, onChan
         return prev + 2;
       });
     }, 80);
+  };
+
+  const handleRunAnalysis = () => {
+    if (onActionRequest) {
+      onActionRequest(runAnalysis, 'analysisRun');
+    } else {
+      runAnalysis();
+    }
   };
 
   const loadData = [
@@ -266,7 +273,7 @@ const StructuralAnalysis: React.FC<StructuralAnalysisProps> = ({ project, onChan
               setMaterials={setMaterials}
               loads={loads}
               setLoads={setLoads}
-              runAnalysis={runAnalysis}
+              runAnalysis={handleRunAnalysis}
             />
           )}
 
@@ -332,7 +339,7 @@ const StructuralAnalysis: React.FC<StructuralAnalysisProps> = ({ project, onChan
       )}
 
       {activeTab === 'detailing' && (
-        <DetailingViewer project={project} />
+        <DetailingViewer project={project} onActionRequest={onActionRequest} />
       )}
 
       {activeTab === 'bbs' && (

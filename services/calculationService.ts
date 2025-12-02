@@ -1,5 +1,5 @@
 
-import { ProjectDetails, BOQItem, PhaseItem, TaskItem, DocumentItem, RABill, FinancialStats, StructuralMember, QualityChecklist, SafetyStat, RateAnalysisItem, Vendor, PurchaseOrder, ReportItem, RFQ, SitePhoto, MeasurementEntry, BBSItem } from '../types';
+import { ProjectDetails, BOQItem, PhaseItem, TaskItem, DocumentItem, RABill, FinancialStats, StructuralMember, QualityChecklist, SafetyStat, RateAnalysisItem, Vendor, PurchaseOrder, ReportItem, RFQ, SitePhoto, MeasurementEntry, BBSItem, ComplianceCheck, ImportJob, DesignCalcStep, SensorData, ConstructionRisk, Plugin } from '../types';
 
 // --- CORE ENGINEERING LOGIC ---
 
@@ -141,7 +141,28 @@ export const generateStructuralMembers = (project: Partial<ProjectDetails>): Str
   return members;
 };
 
-// --- NEW: Bar Bending Schedule Logic ---
+// --- Design Report Generator (Part 9) ---
+export const generateDesignCalculation = (memberType: string): DesignCalcStep[] => {
+  if (memberType === 'Beam') {
+    return [
+      { id: '1', stepName: 'Design Moments', reference: 'Analysis', description: 'Factored Bending Moment', formula: 'Mu', substitution: 'From Envelope', result: '145 kNm', status: 'Info' },
+      { id: '2', stepName: 'Limiting Depth', reference: 'IS 456 Cl 38.1', description: 'Max depth for singly reinforced', formula: 'Xu_max/d = 0.48 (Fe500)', substitution: '0.48 * 450', result: '216 mm', status: 'Info' },
+      { id: '3', stepName: 'Limiting Moment', reference: 'IS 456 Eq G-1.1', description: 'Capacity of section', formula: 'Mu_lim = 0.36 fck b Xu_max (d - 0.42 Xu_max)', substitution: '0.36 * 25 * 230 * 216 * (450 - 0.42*216)', result: '158 kNm', status: 'Info' },
+      { id: '4', stepName: 'Check Capacity', reference: 'IS 456', description: 'Mu vs Mu_lim', formula: 'Mu < Mu_lim', substitution: '145 < 158', result: 'Safe (Singly Reinforced)', status: 'Pass' },
+      { id: '5', stepName: 'Area of Steel', reference: 'IS 456 Eq G-1.1(b)', description: 'Required Tension Steel', formula: 'Ast = 0.5 fck/fy * [1 - sqrt(1 - 4.6 Mu / fck b d^2)] * b d', substitution: 'Calculated...', result: '980 mm²', status: 'Info' },
+      { id: '6', stepName: 'Check Min Steel', reference: 'IS 456 Cl 26.5.1.1', description: 'Minimum Tension Steel', formula: 'Ast_min = 0.85 b d / fy', substitution: '0.85 * 230 * 450 / 500', result: '175 mm²', status: 'Pass' },
+    ];
+  }
+  // Default to Column if not beam
+  return [
+      { id: '1', stepName: 'Factored Loads', reference: 'Analysis', description: 'Axial Load & Moments', formula: 'Pu, Mux, Muy', substitution: 'From Load Combo 1.5(DL+LL)', result: 'Pu=1200kN, Mu=45kNm', status: 'Info' },
+      { id: '2', stepName: 'Slenderness Check', reference: 'IS 456 Cl 25.1.2', description: 'Effective Length Ratio', formula: 'Lex/D, Ley/b', substitution: '3000/450', result: '6.66 < 12 (Short Column)', status: 'Pass' },
+      { id: '3', stepName: 'Min Eccentricity', reference: 'IS 456 Cl 25.4', description: 'Minimum Eccentricity', formula: 'emin = L/500 + D/30', substitution: '3000/500 + 450/30', result: '21 mm', status: 'Info' },
+      { id: '4', stepName: 'Capacity Check', reference: 'IS 456 Cl 39.3', description: 'Pure Axial Capacity', formula: 'Pu = 0.4 fck Ac + 0.67 fy Asc', substitution: '0.4*25*132000 + 0.67*500*2200', result: '2057 kN > 1200 kN', status: 'Pass' },
+  ];
+};
+
+// --- Bar Bending Schedule Logic ---
 export const generateBBS = (project: Partial<ProjectDetails>): BBSItem[] => {
     const isPEB = project.type === 'PEB' || project.type === 'Steel';
     if (isPEB || project.type === 'Landfill') return [];
@@ -683,4 +704,105 @@ export const generateMeasurementBook = (project: Partial<ProjectDetails>): Measu
     }
 
     return entries;
+};
+
+// Regulatory Compliance & Interoperability Logic
+
+export const checkCompliance = (project: Partial<ProjectDetails>): ComplianceCheck[] => {
+  const L = project.dimensions?.length || 0;
+  const W = project.dimensions?.width || 0;
+  const plotArea = L * W;
+  const stories = project.stories || 1;
+  const builtUp = plotArea * 0.75 * stories; // Assuming 75% ground coverage
+  
+  const checks: ComplianceCheck[] = [];
+
+  // 1. FSI Check (Floor Space Index)
+  const fsiLimit = 2.5;
+  const currentFSI = builtUp / plotArea;
+  checks.push({
+    id: 'CMP-01', parameter: 'FSI (Floor Space Index)',
+    allowed: `Max ${fsiLimit}`, actual: currentFSI.toFixed(2),
+    status: currentFSI <= fsiLimit ? 'Pass' : 'Fail',
+    description: 'Total built-up area divided by plot area.'
+  });
+
+  // 2. Setback Checks
+  const minSetback = stories > 3 ? 3.0 : 1.5; // Meters
+  checks.push({
+    id: 'CMP-02', parameter: 'Front Setback',
+    allowed: `Min ${minSetback}m`, actual: '3.5m',
+    status: 'Pass',
+    description: 'Distance from road boundary.'
+  });
+  
+  // 3. Ground Coverage
+  const maxCoverage = 65; // %
+  const currentCoverage = 62; // %
+  checks.push({
+    id: 'CMP-03', parameter: 'Ground Coverage',
+    allowed: `Max ${maxCoverage}%`, actual: `${currentCoverage}%`,
+    status: 'Pass',
+    description: 'Percentage of plot area covered by building footprint.'
+  });
+
+  // 4. Height Restriction
+  const maxHeight = 15; // m (for this zone)
+  const currentHeight = stories * 3; // 3m per floor
+  checks.push({
+    id: 'CMP-04', parameter: 'Building Height',
+    allowed: `Max ${maxHeight}m`, actual: `${currentHeight}m`,
+    status: currentHeight <= maxHeight ? 'Pass' : 'Warning',
+    description: 'Total height from plinth level.'
+  });
+
+  return checks;
+};
+
+export const getImportJobs = (): ImportJob[] => {
+  return [
+    { id: 'IMP-01', fileName: 'Structural_Model_V1.std', type: 'STAAD', date: '2024-03-10', status: 'Completed', details: 'Imported 45 nodes, 62 members.' },
+    { id: 'IMP-02', fileName: 'Site_Scan_Sketch.jpg', type: 'Sketch', date: '2024-03-12', status: 'Completed', details: 'Vectorized walls and columns.' },
+    { id: 'IMP-03', fileName: 'Arch_Plan_Rev2.dxf', type: 'DXF', date: '2024-03-14', status: 'Processing', details: 'Parsing layers...' }
+  ];
+};
+
+// --- NEW GENERATORS FOR ADVANCED FEATURES (Parts 17, 36, 40, 44) ---
+
+// Part 40: Sensor Data Generator (Digital Twin)
+export const generateSensorData = (type: string): SensorData[] => {
+  const timestamp = new Date().toLocaleTimeString();
+  const historyLength = 10;
+  
+  const generateHistory = (base: number) => 
+    Array.from({length: historyLength}, (_, i) => ({
+      time: `${10+i}:00`, 
+      value: base + (Math.random() * 2 - 1)
+    }));
+
+  return [
+    { id: 'S-01', type: 'Strain', location: 'Col C1-GF', value: 450, unit: 'µε', status: 'Normal', timestamp, history: generateHistory(450) },
+    { id: 'S-02', type: 'Tilt', location: 'Roof Lvl', value: 0.05, unit: 'deg', status: 'Normal', timestamp, history: generateHistory(0.05) },
+    { id: 'S-03', type: 'Vibration', location: 'Mid-Span Beam', value: 12, unit: 'Hz', status: 'Warning', timestamp, history: generateHistory(12) },
+    { id: 'S-04', type: 'Temperature', location: 'Ext Wall', value: 38, unit: '°C', status: 'Normal', timestamp, history: generateHistory(35) },
+  ];
+};
+
+// Part 44: Construction Risks
+export const generateConstructionRisks = (): ConstructionRisk[] => {
+  return [
+    { id: 'RSK-01', category: 'Weather', description: 'Monsoon season approaching in 2 weeks', probability: 'High', impact: 'Critical', mitigation: 'Accelerate roof sheeting' },
+    { id: 'RSK-02', category: 'Supply', description: 'Steel price volatility (predicted +5%)', probability: 'Medium', impact: 'Moderate', mitigation: 'Pre-order rebar stock' },
+    { id: 'RSK-03', category: 'Labor', description: 'Shortage of skilled bar-benders', probability: 'Low', impact: 'Moderate', mitigation: 'Engage sub-contractor B' },
+  ];
+};
+
+// Part 17: Plugins
+export const getPlugins = (): Plugin[] => {
+  return [
+    { id: 'PLG-01', name: 'Kratos Multiphysics Core', version: '9.4.0', description: 'Standard Finite Element Solver', author: 'Kratos Team', status: 'Installed', category: 'Solver' },
+    { id: 'PLG-02', name: 'FEniCSx Advanced', version: '0.7.0', description: 'Research-grade continuum mechanics solver', author: 'FEniCS Project', status: 'Available', category: 'Solver' },
+    { id: 'PLG-03', name: 'IS 800:2007 Checker', version: '2.1.0', description: 'Steel Design Code Compliance Module', author: 'StructurAI', status: 'Installed', category: 'Code' },
+    { id: 'PLG-04', name: 'Wind Tunnel Sim', version: '1.0.beta', description: 'CFD-based wind load generation', author: 'OpenFOAM Wrapper', status: 'Available', category: 'AI' },
+  ];
 };

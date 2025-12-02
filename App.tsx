@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatInterface from './components/ChatInterface';
@@ -10,6 +11,7 @@ import Procurement from './components/commercial/Procurement';
 import Reports from './components/general/Reports';
 import Settings from './components/general/Settings';
 import Subscription from './components/general/Subscription';
+import DataExchange from './components/general/DataExchange';
 import Auth from './components/Auth';
 import { ViewState, ProjectDetails } from './types';
 import { Menu } from 'lucide-react';
@@ -82,6 +84,8 @@ const App: React.FC = () => {
         return <Settings />;
       case 'subscription':
         return <Subscription />;
+      case 'data-exchange':
+        return <DataExchange />;
       default:
         return <ChatInterface onProjectUpdate={handleProjectUpdate} project={project} />;
     }

@@ -1,6 +1,6 @@
 
 import React, { useMemo, useState } from 'react';
-import { FileText, Calendar, HardHat, DollarSign, ShieldCheck, Image } from 'lucide-react';
+import { FileText, Calendar, HardHat, DollarSign, ShieldCheck, Image, PlayCircle, Activity } from 'lucide-react';
 import { ProjectDetails } from '../types';
 import { generateSchedule, generateDocuments, generateFinancials, generateQualityData, generateSitePhotos } from '../services/calculationService';
 import GanttChart from './management/GanttChart';
@@ -10,12 +10,14 @@ import DocumentList from './management/DocumentList';
 import Financials from './management/Financials';
 import QualitySafety from './management/QualitySafety';
 import SiteGallery from './management/SiteGallery';
+import ConstructionSequence from './management/ConstructionSequence';
+import Monitoring from './management/Monitoring';
 
 interface ProjectManagementProps {
   project: Partial<ProjectDetails>;
 }
 
-type ManagementTab = 'execution' | 'financials' | 'quality' | 'gallery';
+type ManagementTab = 'execution' | 'simulation' | 'financials' | 'quality' | 'gallery' | 'monitoring';
 
 const ProjectManagement: React.FC<ProjectManagementProps> = ({ project }) => {
   const [activeTab, setActiveTab] = useState<ManagementTab>('execution');
@@ -46,6 +48,17 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ project }) => {
             <span>Site Execution</span>
           </button>
           <button
+            onClick={() => setActiveTab('simulation')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
+              activeTab === 'simulation' 
+                ? 'bg-blue-600 text-white shadow-sm' 
+                : 'text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <PlayCircle size={16} />
+            <span>4D Simulation</span>
+          </button>
+          <button
             onClick={() => setActiveTab('quality')}
             className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
               activeTab === 'quality' 
@@ -55,6 +68,17 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ project }) => {
           >
             <ShieldCheck size={16} />
             <span>QHSE</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('monitoring')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
+              activeTab === 'monitoring' 
+                ? 'bg-blue-600 text-white shadow-sm' 
+                : 'text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <Activity size={16} />
+            <span>Digital Twin</span>
           </button>
           <button
             onClick={() => setActiveTab('gallery')}
@@ -93,6 +117,14 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ project }) => {
             <DocumentList documents={documents} />
           </div>
         </div>
+      )}
+
+      {activeTab === 'simulation' && (
+        <ConstructionSequence phases={phases} />
+      )}
+
+      {activeTab === 'monitoring' && (
+        <Monitoring />
       )}
 
       {activeTab === 'financials' && (

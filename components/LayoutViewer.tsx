@@ -1,7 +1,8 @@
 
-import React, { useEffect, useRef, useState } from 'react';
-import { Download, Maximize, ZoomIn, ZoomOut, RefreshCw, Layers, ArrowRight } from 'lucide-react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
+import { Download, Maximize, ZoomIn, ZoomOut, RefreshCw, Layers, ArrowRight, Upload, ShieldCheck, XCircle, AlertTriangle, Box } from 'lucide-react';
 import { ProjectDetails, ViewState } from '../types';
+import { checkCompliance } from '../services/calculationService';
 
 interface LayoutViewerProps {
   project: Partial<ProjectDetails>;
@@ -10,10 +11,18 @@ interface LayoutViewerProps {
 
 const LayoutViewer: React.FC<LayoutViewerProps> = ({ project, onChangeView }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [viewMode, setViewMode] = useState<'architectural' | 'structural'>('structural');
+  const [viewMode, setViewMode] = useState<'architectural' | 'structural' | 'isometric'>('structural');
+  const [showCompliance, setShowCompliance] = useState(false);
+  
+  const complianceChecks = useMemo(() => checkCompliance(project), [project]);
 
   const drawLayout = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     ctx.clearRect(0, 0, width, height);
+
+    if (viewMode === 'isometric') {
+        drawIsometric(ctx, width, height);
+        return;
+    }
 
     // Background Grid
     ctx.strokeStyle = '#f1f5f9';
@@ -70,12 +79,81 @@ const LayoutViewer: React.FC<LayoutViewerProps> = ({ project, onChangeView }) =>
         } else {
             drawRCCStructure(ctx, startX, startY, drawL, drawW, pLength, pWidth);
         }
-    } else {
+    } else if (viewMode === 'architectural') {
         drawArchitectural(ctx, startX, startY, drawL, drawW);
     }
 
     // Dimensions
     drawDimensionLines(ctx, startX, startY, drawL, drawW, pLength, pWidth);
+  };
+
+  const drawIsometric = (ctx: CanvasRenderingContext2D, w: number, h: number) => {
+      // Simple Isometric Projection Logic (2.5D)
+      const cx = w / 2;
+      const cy = h / 2 - 100;
+      const scale = 0.8;
+      
+      const pLength = (project.dimensions?.length || 60) * 2;
+      const pWidth = (project.dimensions?.width || 40) * 2;
+      const pHeight = (project.stories || 1) * 40;
+
+      // Isometric transformations
+      const toIso = (x: number, y: number, z: number) => {
+          return {
+              x: cx + (x - y) * Math.cos(Math.PI / 6) * scale,
+              y: cy + (x + y) * Math.sin(Math.PI / 6) * scale - z * scale
+          };
+      };
+
+      // Draw Grid (Floor)
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 1;
+      const step = 40;
+      for (let x = -pLength/2; x <= pLength/2; x += step) {
+          const start = toIso(x, -pWidth/2, 0);
+          const end = toIso(x, pWidth/2, 0);
+          ctx.beginPath(); ctx.moveTo(start.x, start.y); ctx.lineTo(end.x, end.y); ctx.stroke();
+      }
+      for (let y = -pWidth/2; y <= pWidth/2; y += step) {
+          const start = toIso(-pLength/2, y, 0);
+          const end = toIso(pLength/2, y, 0);
+          ctx.beginPath(); ctx.moveTo(start.x, start.y); ctx.lineTo(end.x, end.y); ctx.stroke();
+      }
+
+      // Draw Structure (Columns & Beams)
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 2;
+      ctx.fillStyle = '#94a3b8';
+
+      // Columns
+      for (let x = -pLength/2; x <= pLength/2; x += step) {
+          for (let y = -pWidth/2; y <= pWidth/2; y += step) {
+              const base = toIso(x, y, 0);
+              const top = toIso(x, y, pHeight);
+              ctx.beginPath(); ctx.moveTo(base.x, base.y); ctx.lineTo(top.x, top.y); ctx.stroke();
+              
+              // Draw node
+              ctx.beginPath(); ctx.arc(top.x, top.y, 2, 0, Math.PI*2); ctx.fill();
+          }
+      }
+
+      // Roof Beams (Top Floor)
+      ctx.strokeStyle = '#3b82f6';
+      for (let x = -pLength/2; x <= pLength/2; x += step) {
+          const start = toIso(x, -pWidth/2, pHeight);
+          const end = toIso(x, pWidth/2, pHeight);
+          ctx.beginPath(); ctx.moveTo(start.x, start.y); ctx.lineTo(end.x, end.y); ctx.stroke();
+      }
+      for (let y = -pWidth/2; y <= pWidth/2; y += step) {
+          const start = toIso(-pLength/2, y, pHeight);
+          const end = toIso(pLength/2, y, pHeight);
+          ctx.beginPath(); ctx.moveTo(start.x, start.y); ctx.lineTo(end.x, end.y); ctx.stroke();
+      }
+
+      ctx.fillStyle = '#0f172a';
+      ctx.font = '14px Inter';
+      ctx.textAlign = 'center';
+      ctx.fillText('3D Isometric View (Wireframe)', cx, h - 30);
   };
 
   const drawWaterTank = (ctx: CanvasRenderingContext2D, w: number, h: number) => {
@@ -340,15 +418,15 @@ const LayoutViewer: React.FC<LayoutViewerProps> = ({ project, onChangeView }) =>
   }, [project, viewMode]);
 
   return (
-    <div className="flex flex-col h-full bg-slate-50 p-6">
-      <div className="mb-4 flex justify-between items-center">
+    <div className="flex flex-col h-full bg-slate-50 p-6 relative">
+      <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
             <h2 className="text-2xl font-bold text-slate-800">
                 {['Retaining Wall', 'Water Tank', 'Landfill'].includes(project.type || '') ? 'Section / Plan Viewer' : 'Concept Layout'}
             </h2>
             <p className="text-slate-500">Auto-generated geometry for {project.type} structure.</p>
         </div>
-        <div className="flex space-x-2">
+        <div className="flex flex-wrap gap-2">
             {!['Retaining Wall', 'Water Tank', 'Landfill'].includes(project.type || '') && (
                 <div className="bg-white border border-slate-300 rounded flex p-1 mr-2">
                     <button 
@@ -363,25 +441,79 @@ const LayoutViewer: React.FC<LayoutViewerProps> = ({ project, onChangeView }) =>
                     >
                         Architectural
                     </button>
+                    <button 
+                        onClick={() => setViewMode('isometric')}
+                        className={`px-3 py-1 text-sm rounded transition-colors flex items-center gap-1 ${viewMode === 'isometric' ? 'bg-blue-100 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}
+                    >
+                        <Box size={14} /> 3D (Iso)
+                    </button>
                 </div>
             )}
-            <button className="p-2 bg-white border border-slate-300 rounded hover:bg-slate-100 text-slate-600"><RefreshCw size={18} /></button>
-            <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 shadow-sm">
-                <Download size={18} /> <span className="hidden sm:inline">Export CAD</span>
+            <button 
+              onClick={() => setShowCompliance(!showCompliance)}
+              className={`flex items-center gap-2 px-3 py-2 border rounded text-sm shadow-sm transition-colors ${showCompliance ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}`}
+            >
+                <ShieldCheck size={16} /> <span className="hidden sm:inline">Check Bylaws</span>
+            </button>
+             <button className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-300 rounded text-slate-600 hover:bg-slate-50 shadow-sm transition-colors text-sm">
+                <Upload size={16} /> <span className="hidden sm:inline">Trace Sketch</span>
+            </button>
+            <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 shadow-sm text-sm">
+                <Download size={16} /> <span className="hidden sm:inline">Export CAD</span>
             </button>
             {onChangeView && (
               <button 
                 onClick={() => onChangeView('structure')}
-                className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 shadow-sm"
+                className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 shadow-sm text-sm"
               >
-                <span>Analyze Structure</span> <ArrowRight size={18} />
+                <span>Analyze</span> <ArrowRight size={16} />
               </button>
             )}
         </div>
       </div>
       
-      <div className="flex-1 bg-white border border-slate-200 shadow-sm rounded-lg overflow-hidden relative">
-        <canvas ref={canvasRef} className="block" />
+      <div className="flex-1 flex gap-4 overflow-hidden">
+         <div className="flex-1 bg-white border border-slate-200 shadow-sm rounded-lg overflow-hidden relative">
+            <canvas ref={canvasRef} className="block" />
+         </div>
+
+         {/* Compliance Sidebar */}
+         {showCompliance && (
+            <div className="w-80 bg-white border border-slate-200 rounded-lg shadow-xl p-4 overflow-y-auto animate-in slide-in-from-right-10 duration-300">
+               <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                 <ShieldCheck className="text-indigo-600" size={20} /> Regulatory Check
+               </h3>
+               <div className="space-y-4">
+                  {complianceChecks.map(check => (
+                    <div key={check.id} className={`p-3 rounded-lg border ${
+                        check.status === 'Pass' ? 'bg-emerald-50 border-emerald-100' : 
+                        check.status === 'Warning' ? 'bg-amber-50 border-amber-100' : 
+                        'bg-red-50 border-red-100'
+                    }`}>
+                        <div className="flex justify-between items-start mb-1">
+                            <span className="text-sm font-semibold text-slate-800">{check.parameter}</span>
+                            {check.status === 'Pass' && <ShieldCheck size={16} className="text-emerald-600" />}
+                            {check.status === 'Warning' && <AlertTriangle size={16} className="text-amber-600" />}
+                            {check.status === 'Fail' && <XCircle size={16} className="text-red-600" />}
+                        </div>
+                        <div className="flex justify-between text-xs mt-2">
+                             <span className="text-slate-500">Allowed: <strong>{check.allowed}</strong></span>
+                             <span className={`font-bold ${
+                                 check.status === 'Pass' ? 'text-emerald-700' : 
+                                 check.status === 'Warning' ? 'text-amber-700' : 'text-red-700'
+                             }`}>{check.actual}</span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 mt-2 italic border-t border-black/5 pt-2">
+                            {check.description}
+                        </p>
+                    </div>
+                  ))}
+               </div>
+               <div className="mt-4 p-3 bg-slate-50 rounded text-[10px] text-slate-500 text-center">
+                  Based on local bylaws for Zone III. <br/> Consult a licensed architect for approval.
+               </div>
+            </div>
+         )}
       </div>
     </div>
   );

@@ -5,7 +5,11 @@ import AnalysisConfig from './analysis/AnalysisConfig';
 import AnalysisResults from './analysis/AnalysisResults';
 import MemberSchedule from './structure/MemberSchedule';
 import BarBendingSchedule from './structure/BarBendingSchedule';
-import { ArrowRight, BarChart3, Table2, ShieldCheck, Ruler, Scissors } from 'lucide-react';
+import DetailingViewer from './structure/DetailingViewer';
+import LoadGenerator from './analysis/LoadGenerator';
+import SafetyCheck from './structure/SafetyCheck';
+import DesignReport from './structure/DesignReport';
+import { ArrowRight, BarChart3, Table2, ShieldCheck, PenTool, Zap, BookOpen } from 'lucide-react';
 import { generateStructuralMembers, generateBBS } from '../services/calculationService';
 
 interface StructuralAnalysisProps {
@@ -13,10 +17,10 @@ interface StructuralAnalysisProps {
   onChangeView?: (view: ViewState) => void;
 }
 
-type Tab = 'analysis' | 'schedule' | 'bbs';
+type Tab = 'loads' | 'analysis' | 'safety' | 'report' | 'schedule' | 'bbs' | 'detailing';
 
 const StructuralAnalysis: React.FC<StructuralAnalysisProps> = ({ project, onChangeView }) => {
-  const [activeTab, setActiveTab] = useState<Tab>('analysis');
+  const [activeTab, setActiveTab] = useState<Tab>('loads');
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzed, setAnalyzed] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -95,6 +99,17 @@ const StructuralAnalysis: React.FC<StructuralAnalysisProps> = ({ project, onChan
         </div>
         <div className="flex bg-white p-1 rounded-lg border border-slate-200 shadow-sm overflow-x-auto">
           <button
+            onClick={() => setActiveTab('loads')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
+              activeTab === 'loads' 
+                ? 'bg-blue-600 text-white shadow-sm' 
+                : 'text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <Zap size={16} />
+            <span>Load Engine</span>
+          </button>
+          <button
             onClick={() => setActiveTab('analysis')}
             className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
               activeTab === 'analysis' 
@@ -106,6 +121,39 @@ const StructuralAnalysis: React.FC<StructuralAnalysisProps> = ({ project, onChan
             <span>Analysis</span>
           </button>
           <button
+            onClick={() => setActiveTab('safety')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
+              activeTab === 'safety' 
+                ? 'bg-blue-600 text-white shadow-sm' 
+                : 'text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <ShieldCheck size={16} />
+            <span>Safety</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('report')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
+              activeTab === 'report' 
+                ? 'bg-blue-600 text-white shadow-sm' 
+                : 'text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <BookOpen size={16} />
+            <span>Report</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('detailing')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
+              activeTab === 'detailing' 
+                ? 'bg-blue-600 text-white shadow-sm' 
+                : 'text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <PenTool size={16} />
+            <span>Drawings</span>
+          </button>
+          <button
             onClick={() => setActiveTab('schedule')}
             className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
               activeTab === 'schedule' 
@@ -114,21 +162,22 @@ const StructuralAnalysis: React.FC<StructuralAnalysisProps> = ({ project, onChan
             }`}
           >
             <Table2 size={16} />
-            <span>Member Schedule</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('bbs')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
-              activeTab === 'bbs' 
-                ? 'bg-blue-600 text-white shadow-sm' 
-                : 'text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <Scissors size={16} />
-            <span>BBS & Detailing</span>
+            <span>Schedule</span>
           </button>
         </div>
       </div>
+
+      {activeTab === 'loads' && (
+        <LoadGenerator location={project.location || 'Hyderabad'} height={(project.stories || 1) * 3} activeLoads={loads} />
+      )}
+
+      {activeTab === 'safety' && (
+        <SafetyCheck members={structuralMembers} />
+      )}
+
+      {activeTab === 'report' && (
+        <DesignReport />
+      )}
 
       {activeTab === 'analysis' && (
         <>
@@ -207,7 +256,7 @@ const StructuralAnalysis: React.FC<StructuralAnalysisProps> = ({ project, onChan
                                 <p className="text-sm text-slate-500">FOS - Sliding</p>
                                 <h3 className="text-3xl font-bold text-slate-800">1.62</h3>
                             </div>
-                            <div className="p-3 bg-blue-100 text-blue-600 rounded-full"><Ruler size={24} /></div>
+                            <div className="p-3 bg-blue-100 text-blue-600 rounded-full"><ArrowRight size={24} /></div>
                         </div>
                          <p className="text-xs text-blue-600 mt-2 font-medium">Safe (> 1.5)</p>
                     </div>
@@ -238,6 +287,10 @@ const StructuralAnalysis: React.FC<StructuralAnalysisProps> = ({ project, onChan
       
       {activeTab === 'schedule' && (
         <MemberSchedule members={structuralMembers} />
+      )}
+
+      {activeTab === 'detailing' && (
+        <DetailingViewer project={project} />
       )}
 
       {activeTab === 'bbs' && (

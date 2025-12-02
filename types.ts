@@ -44,6 +44,9 @@ export interface StructuralMember {
   concreteVol: number; // Cum
   steelWeight: number; // Kg
   level: string;
+  dcr?: number; // Demand Capacity Ratio
+  status?: 'Safe' | 'Critical' | 'Failed';
+  failureMode?: 'Shear' | 'Moment' | 'Deflection' | 'Buckling' | 'None';
 }
 
 export interface TaskItem {
@@ -227,4 +230,95 @@ export interface BBSItem {
   shapeParams: { a: number; b: number; c?: number; d?: number }; // dimensions in mm
 }
 
-export type ViewState = 'dashboard' | 'chat' | 'layout' | 'structure' | 'estimation' | 'procurement' | 'management' | 'reports' | 'settings' | 'subscription';
+export interface ComplianceCheck {
+  id: string;
+  parameter: string;
+  allowed: string;
+  actual: string;
+  status: 'Pass' | 'Fail' | 'Warning';
+  description: string;
+}
+
+export interface ImportJob {
+  id: string;
+  fileName: string;
+  type: 'STAAD' | 'ETABS' | 'DXF' | 'Sketch';
+  date: string;
+  status: 'Completed' | 'Processing' | 'Failed';
+  details: string;
+}
+
+// Engineering Types for Load Engine (Part 7)
+export interface WindParams {
+  basicWindSpeed: number; // Vb in m/s
+  k1: number; // Probability Factor
+  k2: number; // Terrain Roughness Factor
+  k3: number; // Topography Factor
+  k4: number; // Cyclonic Factor
+  designWindSpeed: number; // Vz
+  windPressure: number; // Pz
+}
+
+export interface SeismicParams {
+  zone: 'II' | 'III' | 'IV' | 'V';
+  zoneFactor: number; // Z
+  importanceFactor: number; // I
+  responseReduction: number; // R
+  soilType: 'Soft' | 'Medium' | 'Hard'; // Sa/g dependency
+  baseShearCoeff: number; // Ah
+}
+
+// Load Combinations (Part 7)
+export interface LoadCombination {
+  id: string;
+  name: string;
+  type: 'ULS' | 'SLS'; // Ultimate vs Serviceability
+  factors: { [key: string]: number }; // e.g. { DL: 1.5, LL: 1.5 }
+}
+
+// Detailed Design Calculation (Part 9)
+export interface DesignCalcStep {
+  id: string;
+  stepName: string;
+  reference: string; // e.g., "IS 456 Cl 26.5"
+  description: string;
+  formula: string;
+  substitution: string;
+  result: string;
+  status: 'Pass' | 'Fail' | 'Info';
+}
+
+// Digital Twin & Monitoring (Part 40)
+export interface SensorData {
+  id: string;
+  type: 'Strain' | 'Tilt' | 'Vibration' | 'Temperature';
+  location: string;
+  value: number;
+  unit: string;
+  status: 'Normal' | 'Warning' | 'Critical';
+  timestamp: string;
+  history: { time: string; value: number }[];
+}
+
+// Construction Risks (Part 44)
+export interface ConstructionRisk {
+  id: string;
+  category: 'Weather' | 'Supply' | 'Labor' | 'Design';
+  description: string;
+  probability: 'High' | 'Medium' | 'Low';
+  impact: 'Critical' | 'Moderate' | 'Low';
+  mitigation: string;
+}
+
+// Plugin Architecture (Part 17)
+export interface Plugin {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  author: string;
+  status: 'Installed' | 'Available' | 'Update';
+  category: 'Solver' | 'Code' | 'AI';
+}
+
+export type ViewState = 'dashboard' | 'chat' | 'layout' | 'structure' | 'estimation' | 'procurement' | 'management' | 'reports' | 'settings' | 'subscription' | 'data-exchange';

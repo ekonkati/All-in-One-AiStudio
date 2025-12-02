@@ -1,9 +1,11 @@
 
 import React, { useState } from 'react';
-import { User, Building, Globe, Shield, Save } from 'lucide-react';
+import { User, Building, Globe, Shield, Save, Box, DownloadCloud, CheckCircle2 } from 'lucide-react';
+import { getPlugins } from '../../services/calculationService';
 
 const Settings: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'general' | 'engineering' | 'profile'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'engineering' | 'profile' | 'plugins'>('general');
+  const plugins = getPlugins();
 
   return (
     <div className="p-6 h-full overflow-y-auto bg-slate-50 animate-in fade-in duration-500">
@@ -38,6 +40,14 @@ const Settings: React.FC = () => {
                  }`}
                >
                  <Shield size={18} /> Engineering Standards
+               </button>
+               <button
+                 onClick={() => setActiveTab('plugins')}
+                 className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                   activeTab === 'plugins' ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-50'
+                 }`}
+               >
+                 <Box size={18} /> Plugins & Extensions
                </button>
                <button
                  onClick={() => setActiveTab('profile')}
@@ -126,6 +136,38 @@ const Settings: React.FC = () => {
                         <input type="number" defaultValue={1.5} className="w-full border border-slate-300 rounded p-2 text-sm" />
                       </div>
                    </div>
+                </div>
+             </div>
+           )}
+
+           {activeTab === 'plugins' && (
+             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
+                <h3 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-4">Plugin Marketplace</h3>
+                <p className="text-sm text-slate-500">Extend StructurAI functionalities with third-party solvers and code packs.</p>
+                
+                <div className="space-y-4">
+                    {plugins.map(plugin => (
+                        <div key={plugin.id} className="border border-slate-200 rounded-lg p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
+                                    <Box size={24} />
+                                </div>
+                                <div>
+                                    <h4 className="font-semibold text-slate-800">{plugin.name} <span className="text-xs font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded ml-2">v{plugin.version}</span></h4>
+                                    <p className="text-sm text-slate-500">{plugin.description}</p>
+                                    <p className="text-xs text-slate-400 mt-1">By {plugin.author}</p>
+                                </div>
+                            </div>
+                            <button className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${
+                                plugin.status === 'Installed' 
+                                ? 'bg-emerald-100 text-emerald-700 cursor-default' 
+                                : 'bg-blue-600 text-white hover:bg-blue-700'
+                            }`}>
+                                {plugin.status === 'Installed' ? <CheckCircle2 size={16} /> : <DownloadCloud size={16} />}
+                                {plugin.status}
+                            </button>
+                        </div>
+                    ))}
                 </div>
              </div>
            )}

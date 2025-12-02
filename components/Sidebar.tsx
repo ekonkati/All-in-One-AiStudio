@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { 
   LayoutDashboard, 
@@ -13,7 +14,9 @@ import {
   ShoppingCart,
   FileText,
   PlusCircle,
-  Crown
+  Crown,
+  Database,
+  Zap
 } from 'lucide-react';
 import { ViewState } from '../types';
 
@@ -51,7 +54,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, projectCreated,
       children: [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, view: 'dashboard' },
         { id: 'chat', label: 'AI Consultant', icon: MessageSquare, view: 'chat' },
-        { id: 'reports', label: 'Reports', icon: FileText, view: 'reports' }
+        { id: 'reports', label: 'Reports', icon: FileText, view: 'reports' },
+        { id: 'exchange', label: 'Data Exchange', icon: Database, view: 'data-exchange' }
       ]
     },
     { 
@@ -60,6 +64,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, projectCreated,
       children: [
         { id: 'layout', label: 'Layouts', icon: Ruler, view: 'layout' },
         { id: 'structure', label: 'Structural Design', icon: HardHat, view: 'structure' },
+        // Quick access to load engine via structure view (simulated link)
+        { id: 'loads', label: 'Load Engine', icon: Zap, view: 'structure' },
       ]
     },
     { 

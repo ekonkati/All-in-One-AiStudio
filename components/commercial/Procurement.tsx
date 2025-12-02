@@ -1,8 +1,10 @@
 
 import React, { useMemo, useState } from 'react';
-import { ShoppingCart, Users, Package, Truck, Search, Plus, Filter, FileText, Gavel, ArrowRight } from 'lucide-react';
+import { ShoppingCart, Users, Package, Truck, Search, Plus, Filter, FileText, Gavel, ArrowRight, Calculator } from 'lucide-react';
 import { ProjectDetails } from '../../types';
 import { generateProcurementData } from '../../services/calculationService';
+import PurchaseOrderForm from './PurchaseOrderForm';
+import BillGenerator from './BillGenerator';
 
 interface ProcurementProps {
   project: Partial<ProjectDetails>;
@@ -12,13 +14,15 @@ type Tab = 'orders' | 'tendering' | 'vendors';
 
 const Procurement: React.FC<ProcurementProps> = ({ project }) => {
   const [activeTab, setActiveTab] = useState<Tab>('orders');
+  const [showPOForm, setShowPOForm] = useState(false);
+  const [showBillGen, setShowBillGen] = useState(false);
   const { vendors, orders, rfqs } = useMemo(() => generateProcurementData(project), [project]);
 
   const totalPOValue = orders.reduce((sum, po) => sum + po.amount, 0);
   const pendingOrders = orders.filter(po => po.status !== 'Delivered').length;
 
   return (
-    <div className="p-6 h-full overflow-y-auto bg-slate-50 animate-in fade-in duration-500">
+    <div className="p-6 h-full overflow-y-auto bg-slate-50 animate-in fade-in duration-500 relative">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">Procurement & Supply Chain</h2>
@@ -80,11 +84,11 @@ const Procurement: React.FC<ProcurementProps> = ({ project }) => {
                     <h3 className="text-2xl font-bold text-slate-800">{pendingOrders}</h3>
                 </div>
                 </div>
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-                <div className="p-3 bg-purple-100 text-purple-600 rounded-lg"><Users size={24} /></div>
+                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => setShowBillGen(true)}>
+                <div className="p-3 bg-purple-100 text-purple-600 rounded-lg"><Calculator size={24} /></div>
                 <div>
-                    <p className="text-sm text-slate-500">Active Vendors</p>
-                    <h3 className="text-2xl font-bold text-slate-800">{vendors.length}</h3>
+                    <p className="text-sm text-slate-500">Pending Bills</p>
+                    <h3 className="text-2xl font-bold text-slate-800 flex items-center gap-1">Generate <ArrowRight size={16} /></h3>
                 </div>
                 </div>
             </div>
@@ -96,7 +100,10 @@ const Procurement: React.FC<ProcurementProps> = ({ project }) => {
                     <FileText size={18} className="text-slate-500" /> Recent Purchase Orders
                     </h3>
                     <div className="flex gap-2">
-                    <button className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm">
+                    <button 
+                        onClick={() => setShowPOForm(true)}
+                        className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm"
+                    >
                         <Plus size={16} /> New PO
                     </button>
                     </div>
@@ -246,6 +253,11 @@ const Procurement: React.FC<ProcurementProps> = ({ project }) => {
            </div>
         </div>
       )}
+
+      {/* Modal PO Form */}
+      {showPOForm && <PurchaseOrderForm onClose={() => setShowPOForm(false)} />}
+      {/* Modal Bill Generator */}
+      {showBillGen && <BillGenerator onClose={() => setShowBillGen(false)} />}
     </div>
   );
 };

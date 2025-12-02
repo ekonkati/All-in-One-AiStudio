@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { CheckCircle2, AlertTriangle, Database, Anchor } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { CheckCircle2, AlertTriangle, Database, Anchor, Terminal, ChevronDown, ChevronUp, Activity } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { ProjectDetails } from '../../types';
 
@@ -11,6 +11,48 @@ interface AnalysisResultsProps {
 }
 
 const AnalysisResults: React.FC<AnalysisResultsProps> = ({ project, loadData, momentData }) => {
+  const [showConsole, setShowConsole] = useState(false);
+  const [logs, setLogs] = useState<string[]>([]);
+  const logContainerRef = useRef<HTMLDivElement>(null);
+
+  // Simulated Kratos Solver Logs
+  const logSequence = [
+      "INFO: Kratos Multiphysics 9.4.0 initialized",
+      "INFO: Reading ModelPart from 'structure.mdpa'",
+      "INFO: Reading nodes: 452, Reading elements: 860",
+      "INFO: Identifying Dofs... Done.",
+      "INFO: Linear Solver: SuperLU",
+      "INFO: Computing Global Stiffness Matrix...",
+      "INFO: Boundary Conditions applied: 24 fixed nodes",
+      "INFO: Checking stability... Stable.",
+      "INFO: Solving system...",
+      "INFO: Iteration 1: Residual = 1.2e-4",
+      "INFO: Iteration 2: Residual = 4.5e-8",
+      "INFO: Convergence achieved in 2 iterations.",
+      "SUCCESS: Analysis completed in 0.42s.",
+      "INFO: Post-processing results...",
+      "INFO: Writing output: 'structure.post.bin'"
+  ];
+
+  useEffect(() => {
+      let index = 0;
+      setLogs([]);
+      const interval = setInterval(() => {
+          if (index < logSequence.length) {
+              const timestamp = new Date().toISOString().split('T')[1].slice(0, 8);
+              setLogs(prev => [...prev, `[${timestamp}] ${logSequence[index]}`]);
+              index++;
+              // Auto-scroll
+              if(logContainerRef.current) {
+                  logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+              }
+          } else {
+              clearInterval(interval);
+          }
+      }, 300); // Stream logs every 300ms
+      return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Status Cards */}
@@ -89,6 +131,34 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({ project, loadData, mo
             <span className="flex items-center gap-1"><div className="w-2 h-2 bg-emerald-500 rounded-full"></div> Shear Force</span>
           </div>
         </div>
+      </div>
+
+      {/* Live Solver Console Log (Part 30 Transparency) */}
+      <div className="bg-slate-900 rounded-xl overflow-hidden shadow-lg border border-slate-700">
+          <div 
+             className="p-3 bg-slate-800 flex justify-between items-center cursor-pointer hover:bg-slate-700 transition-colors"
+             onClick={() => setShowConsole(!showConsole)}
+          >
+              <div className="flex items-center gap-2 text-white font-mono text-sm">
+                  <Terminal size={16} className="text-green-400" />
+                  <span>Solver Output Log (Kratos Multiphysics)</span>
+                  {logs.length < logSequence.length && <Activity size={14} className="animate-pulse text-green-400"/>}
+              </div>
+              {showConsole ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />}
+          </div>
+          {showConsole && (
+              <div 
+                ref={logContainerRef}
+                className="p-4 font-mono text-xs text-slate-300 h-48 overflow-y-auto whitespace-pre-line border-t border-slate-700 bg-slate-950/50"
+              >
+                  {logs.map((log, i) => (
+                      <div key={i} className="mb-1">{log}</div>
+                  ))}
+                  {logs.length === logSequence.length && (
+                      <div className="text-emerald-400 mt-2 font-bold">{`>>> PROCESS FINISHED WITH EXIT CODE 0`}</div>
+                  )}
+              </div>
+          )}
       </div>
     </div>
   );

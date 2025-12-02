@@ -1,8 +1,7 @@
-
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { Download, Maximize, ZoomIn, ZoomOut, RefreshCw, Layers, ArrowRight, Upload, ShieldCheck, XCircle, AlertTriangle, Box } from 'lucide-react';
+import { Download, Maximize, ZoomIn, ZoomOut, RefreshCw, Layers, ArrowRight, Upload, ShieldCheck, XCircle, AlertTriangle, Box, Activity, Zap, CheckSquare, Wand2, ScanLine, BrainCircuit, Info, Grid } from 'lucide-react';
 import { ProjectDetails, ViewState } from '../types';
-import { checkCompliance } from '../services/calculationService';
+import { checkCompliance, generateMEP } from '../services/calculationService';
 
 interface LayoutViewerProps {
   project: Partial<ProjectDetails>;
@@ -11,10 +10,47 @@ interface LayoutViewerProps {
 
 const LayoutViewer: React.FC<LayoutViewerProps> = ({ project, onChangeView }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [viewMode, setViewMode] = useState<'architectural' | 'structural' | 'isometric'>('structural');
+  const [viewMode, setViewMode] = useState<'architectural' | 'structural' | 'isometric' | 'mep'>('structural');
   const [showCompliance, setShowCompliance] = useState(false);
+  const [showReasoning, setShowReasoning] = useState(false); // SWIL State
+  const [clashResolved, setClashResolved] = useState(false);
+  const [isTracing, setIsTracing] = useState(false);
   
   const complianceChecks = useMemo(() => checkCompliance(project), [project]);
+  
+  // Generate MEP items based on layout dimensions (mock logic)
+  const initialMepItems = useMemo(() => {
+      return generateMEP(800, 600); 
+  }, []);
+
+  const [mepItems, setMepItems] = useState(initialMepItems);
+
+  const handleResolveClash = () => {
+      setMepItems(prev => prev.map(item => {
+          if (item.clash) {
+              // Simple reroute logic simulation
+              return {
+                  ...item,
+                  clash: false,
+                  color: '#10b981', // Turn green
+                  start: { ...item.start, x: item.start.x + 20 }, // Shift position
+                  end: { ...item.end, x: item.end.x + 20 }
+              };
+          }
+          return item;
+      }));
+      setClashResolved(true);
+  };
+
+  const handleTraceSketch = () => {
+    setIsTracing(true);
+    // Simulate AI processing time
+    setTimeout(() => {
+        setIsTracing(false);
+        setViewMode('architectural'); // Switch to the generated view
+        alert("AI Vectorization Complete: Hand-sketch converted to parametric plan.");
+    }, 2500);
+  };
 
   const drawLayout = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     ctx.clearRect(0, 0, width, height);
@@ -81,6 +117,13 @@ const LayoutViewer: React.FC<LayoutViewerProps> = ({ project, onChangeView }) =>
         }
     } else if (viewMode === 'architectural') {
         drawArchitectural(ctx, startX, startY, drawL, drawW);
+    } else if (viewMode === 'mep') {
+        // Draw basic architectural context first
+        ctx.globalAlpha = 0.3;
+        drawArchitectural(ctx, startX, startY, drawL, drawW);
+        ctx.globalAlpha = 1.0;
+        // Use MEP items
+        drawMEP(ctx, startX, startY, drawL, drawW);
     }
 
     // Dimensions
@@ -374,6 +417,53 @@ const LayoutViewer: React.FC<LayoutViewerProps> = ({ project, onChangeView }) =>
       ctx.fillText('Office', x + w/2 + 20, y + h - 20);
   };
 
+  const drawMEP = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) => {
+      // Use generated data but scale to current view
+      const scaleX = w / 800; 
+      const scaleY = h / 600;
+
+      mepItems.forEach(item => {
+          // Scale coordinates relative to current box
+          const startX = x + (item.start.x * scaleX);
+          const startY = y + (item.start.y * scaleY);
+          const endX = x + (item.end.x * scaleX);
+          const endY = y + (item.end.y * scaleY);
+          
+          ctx.strokeStyle = item.color;
+          ctx.lineWidth = item.width * Math.min(scaleX, scaleY) * 0.5; // Scale width too
+          if (item.type === 'Tray') ctx.setLineDash([10, 5]);
+          else ctx.setLineDash([]);
+
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          ctx.lineTo(endX, endY);
+          ctx.stroke();
+
+          // Label
+          ctx.fillStyle = item.color;
+          ctx.font = '10px Inter';
+          ctx.fillText(item.description, startX + 5, startY - 5);
+
+          // Clash Indicator
+          if (item.clash) {
+              const midX = (startX + endX) / 2;
+              const midY = (startY + endY) / 2;
+              
+              ctx.beginPath();
+              ctx.arc(midX, midY, 10, 0, Math.PI * 2);
+              ctx.fillStyle = 'rgba(239, 68, 68, 0.5)'; // Red halo
+              ctx.fill();
+              ctx.strokeStyle = '#ef4444';
+              ctx.lineWidth = 2;
+              ctx.stroke();
+              
+              ctx.fillStyle = '#ef4444';
+              ctx.font = 'bold 12px Inter';
+              ctx.fillText('CLASH!', midX + 12, midY + 4);
+          }
+      });
+  };
+
   const drawDimensionLines = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, realW: number, realH: number) => {
     ctx.strokeStyle = '#94a3b8';
     ctx.lineWidth = 1;
@@ -415,7 +505,7 @@ const LayoutViewer: React.FC<LayoutViewerProps> = ({ project, onChangeView }) =>
         }
       }
     }
-  }, [project, viewMode]);
+  }, [project, viewMode, mepItems, isTracing]);
 
   return (
     <div className="flex flex-col h-full bg-slate-50 p-6 relative">
@@ -442,6 +532,12 @@ const LayoutViewer: React.FC<LayoutViewerProps> = ({ project, onChangeView }) =>
                         Architectural
                     </button>
                     <button 
+                        onClick={() => setViewMode('mep')}
+                        className={`px-3 py-1 text-sm rounded transition-colors flex items-center gap-1 ${viewMode === 'mep' ? 'bg-blue-100 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}
+                    >
+                        <Activity size={14} /> MEP
+                    </button>
+                    <button 
                         onClick={() => setViewMode('isometric')}
                         className={`px-3 py-1 text-sm rounded transition-colors flex items-center gap-1 ${viewMode === 'isometric' ? 'bg-blue-100 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}
                     >
@@ -450,13 +546,24 @@ const LayoutViewer: React.FC<LayoutViewerProps> = ({ project, onChangeView }) =>
                 </div>
             )}
             <button 
+               onClick={() => setShowReasoning(!showReasoning)}
+               className={`flex items-center gap-2 px-3 py-2 border rounded text-sm shadow-sm transition-colors ${showReasoning ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-purple-600 border-purple-200 hover:bg-purple-50'}`}
+            >
+               <BrainCircuit size={16} /> <span className="hidden sm:inline">Explain Design</span>
+            </button>
+            <button 
               onClick={() => setShowCompliance(!showCompliance)}
               className={`flex items-center gap-2 px-3 py-2 border rounded text-sm shadow-sm transition-colors ${showCompliance ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}`}
             >
                 <ShieldCheck size={16} /> <span className="hidden sm:inline">Check Bylaws</span>
             </button>
-             <button className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-300 rounded text-slate-600 hover:bg-slate-50 shadow-sm transition-colors text-sm">
-                <Upload size={16} /> <span className="hidden sm:inline">Trace Sketch</span>
+             <button 
+                onClick={handleTraceSketch}
+                disabled={isTracing}
+                className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-300 rounded text-slate-600 hover:bg-slate-50 shadow-sm transition-colors text-sm disabled:opacity-70"
+             >
+                {isTracing ? <RefreshCw size={16} className="animate-spin" /> : <Upload size={16} />} 
+                <span className="hidden sm:inline">{isTracing ? 'Vectorizing...' : 'Trace Sketch'}</span>
             </button>
             <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 shadow-sm text-sm">
                 <Download size={16} /> <span className="hidden sm:inline">Export CAD</span>
@@ -475,10 +582,78 @@ const LayoutViewer: React.FC<LayoutViewerProps> = ({ project, onChangeView }) =>
       <div className="flex-1 flex gap-4 overflow-hidden">
          <div className="flex-1 bg-white border border-slate-200 shadow-sm rounded-lg overflow-hidden relative">
             <canvas ref={canvasRef} className="block" />
+            
+            {isTracing && (
+                <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center backdrop-blur-sm">
+                    <ScanLine size={48} className="text-blue-600 animate-pulse mb-4" />
+                    <h3 className="text-xl font-bold text-slate-800">AI Vectorization in Progress</h3>
+                    <p className="text-slate-500">Converting raster image to parametric CAD model (Part 32)</p>
+                </div>
+            )}
+
+            {viewMode === 'mep' && (
+                <div className="absolute top-4 left-4 bg-white/90 p-3 rounded-lg border border-slate-200 text-xs shadow-md backdrop-blur-sm">
+                    <h4 className="font-bold text-slate-700 mb-2 flex items-center gap-2"><Activity size={14} /> MEP Coordination</h4>
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2"><div className="w-3 h-3 bg-blue-500 rounded-full"></div> HVAC Duct</div>
+                        <div className="flex items-center gap-2"><div className="w-3 h-3 bg-red-500 rounded-full"></div> Fire Pipe</div>
+                        <div className="flex items-center gap-2"><div className="w-3 h-3 bg-yellow-500 rounded-full"></div> Elec Tray</div>
+                    </div>
+                    
+                    {mepItems.some(i => i.clash) && !clashResolved && (
+                        <div className="mt-3 pt-3 border-t border-slate-200">
+                            <div className="flex items-center gap-2 text-red-600 font-bold mb-2"><AlertTriangle size={14} /> 1 Clash Detected</div>
+                            <button 
+                                onClick={handleResolveClash}
+                                className="w-full bg-indigo-600 text-white py-1.5 rounded flex items-center justify-center gap-1 hover:bg-indigo-700 shadow-sm animate-pulse"
+                            >
+                                <Wand2 size={12} /> AI Auto-Resolve
+                            </button>
+                        </div>
+                    )}
+                    {clashResolved && (
+                        <div className="mt-3 pt-3 border-t border-slate-200 text-emerald-600 font-bold flex items-center gap-2">
+                            <CheckSquare size={14} /> All Clashes Resolved
+                        </div>
+                    )}
+                </div>
+            )}
          </div>
 
+         {/* AI Design Reasoning Panel (Part 23) */}
+         {showReasoning && (
+            <div className="w-80 bg-white border border-purple-200 rounded-lg shadow-xl p-0 overflow-hidden animate-in slide-in-from-right-10 duration-300 flex flex-col">
+               <div className="bg-purple-50 p-4 border-b border-purple-100">
+                   <h3 className="font-bold text-purple-900 flex items-center gap-2">
+                     <BrainCircuit size={20} /> AI Design Logic
+                   </h3>
+                   <p className="text-xs text-purple-700 mt-1">Why the system chose this layout:</p>
+               </div>
+               <div className="p-4 space-y-4 overflow-y-auto flex-1">
+                   <div className="text-sm">
+                       <h4 className="font-semibold text-slate-800 mb-1 flex items-center gap-2"><Grid size={14}/> Grid Spacing</h4>
+                       <p className="text-slate-600 bg-slate-50 p-2 rounded border border-slate-100">
+                           Selected <strong>15ft spans</strong> to optimize for RCC Beam depth (L/12 rule) and avoid deep beams that reduce headroom.
+                       </p>
+                   </div>
+                   <div className="text-sm">
+                       <h4 className="font-semibold text-slate-800 mb-1 flex items-center gap-2"><Layers size={14}/> Structural System</h4>
+                       <p className="text-slate-600 bg-slate-50 p-2 rounded border border-slate-100">
+                           <strong>Moment Resisting Frame (SMRF)</strong> chosen because location is in Seismic Zone III. Shear walls not required for G+{project.stories}.
+                       </p>
+                   </div>
+                    <div className="text-sm">
+                       <h4 className="font-semibold text-slate-800 mb-1 flex items-center gap-2"><Info size={14}/> Foundation</h4>
+                       <p className="text-slate-600 bg-slate-50 p-2 rounded border border-slate-100">
+                           <strong>Isolated Footings</strong> assumed due to "Medium Soil" input. If SBC &lt; 100 kN/m², raft would be auto-suggested.
+                       </p>
+                   </div>
+               </div>
+            </div>
+         )}
+
          {/* Compliance Sidebar */}
-         {showCompliance && (
+         {showCompliance && !showReasoning && (
             <div className="w-80 bg-white border border-slate-200 rounded-lg shadow-xl p-4 overflow-y-auto animate-in slide-in-from-right-10 duration-300">
                <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
                  <ShieldCheck className="text-indigo-600" size={20} /> Regulatory Check

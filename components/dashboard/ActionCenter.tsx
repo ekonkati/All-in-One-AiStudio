@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MousePointerClick, Building, AlertCircle, Calendar, MapPin, Share2 } from 'lucide-react';
+import { MousePointerClick, Building, AlertCircle, Calendar, MapPin, Share2, ShoppingCart, FileText, Activity } from 'lucide-react';
 import { ViewState } from '../../types';
 
 interface ActionCenterProps {
@@ -43,7 +43,28 @@ const ActionCenter: React.FC<ActionCenterProps> = ({ onChangeView }) => {
           <span className="block text-sm font-semibold text-slate-700 group-hover:text-blue-700">Site Management</span>
           <span className="text-xs text-slate-400 mt-1 block">Track daily progress, material log, and inspection reports.</span>
         </button>
-         <button onClick={() => {}} className="p-4 rounded-lg border border-slate-100 hover:border-emerald-500 hover:bg-emerald-50 transition-all text-left group relative overflow-hidden col-span-1 sm:col-span-2 lg:col-span-2">
+        <button onClick={() => onChangeView('digital-twin')} className="p-4 rounded-lg border border-slate-100 hover:border-purple-500 hover:bg-purple-50 transition-all text-left group relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+            <Activity size={64} className="text-purple-600" />
+          </div>
+          <span className="block text-sm font-semibold text-slate-700 group-hover:text-purple-700">Digital Twin</span>
+          <span className="text-xs text-slate-400 mt-1 block">Monitor real-time IoT sensors and structural health.</span>
+        </button>
+        <button onClick={() => onChangeView('procurement')} className="p-4 rounded-lg border border-slate-100 hover:border-blue-500 hover:bg-blue-50 transition-all text-left group relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+            <ShoppingCart size={64} className="text-blue-600" />
+          </div>
+          <span className="block text-sm font-semibold text-slate-700 group-hover:text-blue-700">Procurement</span>
+          <span className="text-xs text-slate-400 mt-1 block">Manage vendors, RFQs, and purchase orders.</span>
+        </button>
+         <button onClick={() => onChangeView('reports')} className="p-4 rounded-lg border border-slate-100 hover:border-blue-500 hover:bg-blue-50 transition-all text-left group relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+            <FileText size={64} className="text-blue-600" />
+          </div>
+          <span className="block text-sm font-semibold text-slate-700 group-hover:text-blue-700">Reports</span>
+          <span className="text-xs text-slate-400 mt-1 block">Download DPRs, drawings, and safety logs.</span>
+        </button>
+         <button onClick={() => onChangeView('data-exchange')} className="p-4 rounded-lg border border-slate-100 hover:border-emerald-500 hover:bg-emerald-50 transition-all text-left group relative overflow-hidden col-span-1 sm:col-span-2 lg:col-span-3">
           <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
             <Share2 size={64} className="text-emerald-600" />
           </div>

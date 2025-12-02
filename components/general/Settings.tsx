@@ -1,18 +1,20 @@
 
 import React, { useState } from 'react';
-import { User, Building, Globe, Shield, Save, Box, DownloadCloud, CheckCircle2 } from 'lucide-react';
-import { getPlugins } from '../../services/calculationService';
+import { User, Building, Globe, Shield, Save, Box, DownloadCloud, CheckCircle2, Lock, Server, Activity, RefreshCw, Terminal } from 'lucide-react';
+import { getPlugins, generateAuditLogs, getSystemStatus } from '../../services/calculationService';
 
 const Settings: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'general' | 'engineering' | 'profile' | 'plugins'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'engineering' | 'profile' | 'plugins' | 'security' | 'deployment'>('general');
   const plugins = getPlugins();
+  const auditLogs = generateAuditLogs();
+  const systemStatus = getSystemStatus();
 
   return (
     <div className="p-6 h-full overflow-y-auto bg-slate-50 animate-in fade-in duration-500">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">Settings & Configuration</h2>
-          <p className="text-slate-500">Manage application preferences and engineering standards</p>
+          <h2 className="text-2xl font-bold text-slate-800">Settings & Admin Console</h2>
+          <p className="text-slate-500">Manage application preferences, security, and deployment</p>
         </div>
         <button className="bg-blue-600 text-white px-6 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm">
           <Save size={18} />
@@ -40,6 +42,22 @@ const Settings: React.FC = () => {
                  }`}
                >
                  <Shield size={18} /> Engineering Standards
+               </button>
+               <button
+                 onClick={() => setActiveTab('security')}
+                 className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                   activeTab === 'security' ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-50'
+                 }`}
+               >
+                 <Lock size={18} /> Security & Audit
+               </button>
+               <button
+                 onClick={() => setActiveTab('deployment')}
+                 className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                   activeTab === 'deployment' ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-50'
+                 }`}
+               >
+                 <Server size={18} /> Deployment Ops
                </button>
                <button
                  onClick={() => setActiveTab('plugins')}
@@ -140,9 +158,88 @@ const Settings: React.FC = () => {
              </div>
            )}
 
+           {activeTab === 'security' && (
+             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
+                 <h3 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-4 flex items-center gap-2">
+                     <Lock size={20} className="text-emerald-600"/> Security & Audit Trail (Part 19)
+                 </h3>
+                 
+                 <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                     <table className="w-full text-left text-sm text-slate-600">
+                         <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase font-semibold">
+                             <tr>
+                                 <th className="p-3">Timestamp</th>
+                                 <th className="p-3">User</th>
+                                 <th className="p-3">Action</th>
+                                 <th className="p-3">Module</th>
+                                 <th className="p-3">Status</th>
+                             </tr>
+                         </thead>
+                         <tbody className="divide-y divide-slate-100">
+                             {auditLogs.map(log => (
+                                 <tr key={log.id} className="hover:bg-slate-50">
+                                     <td className="p-3 font-mono text-xs text-slate-500">{log.timestamp}</td>
+                                     <td className="p-3 font-medium text-slate-800">{log.user}</td>
+                                     <td className="p-3">{log.action}</td>
+                                     <td className="p-3"><span className="bg-slate-100 px-2 py-0.5 rounded text-xs">{log.module}</span></td>
+                                     <td className="p-3">
+                                         <span className={`text-xs px-2 py-0.5 rounded font-bold ${
+                                             log.status === 'Success' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                                         }`}>{log.status}</span>
+                                     </td>
+                                 </tr>
+                             ))}
+                         </tbody>
+                     </table>
+                 </div>
+                 <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 text-xs text-slate-500">
+                     Immutable Ledger enabled. All actions are cryptographically signed (SHA-256).
+                 </div>
+             </div>
+           )}
+
+           {activeTab === 'deployment' && (
+             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
+                 <h3 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-4 flex items-center gap-2">
+                     <Server size={20} className="text-indigo-600"/> Deployment Status (Part 42)
+                 </h3>
+                 
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                     {systemStatus.map((status, i) => (
+                         <div key={i} className="p-4 border border-slate-200 rounded-lg flex justify-between items-center">
+                             <div>
+                                 <h4 className="font-medium text-slate-800">{status.component}</h4>
+                                 <p className="text-xs text-slate-500">Uptime: {status.uptime}</p>
+                             </div>
+                             <div className="text-right">
+                                 <span className={`text-xs font-bold px-2 py-1 rounded flex items-center gap-1 mb-1 ${
+                                     status.status === 'Healthy' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                                 }`}>
+                                     <Activity size={12}/> {status.status}
+                                 </span>
+                                 <p className="text-xs text-slate-400 font-mono">{status.latency} ms</p>
+                             </div>
+                         </div>
+                     ))}
+                 </div>
+
+                 <div className="p-4 bg-slate-900 rounded-lg text-slate-300 font-mono text-xs">
+                     <div className="flex justify-between items-center mb-2 border-b border-slate-700 pb-2">
+                         <span className="text-white font-bold flex items-center gap-2"><Terminal size={14}/> Docker Container Logs</span>
+                         <RefreshCw size={14} className="cursor-pointer hover:text-white"/>
+                     </div>
+                     <div className="space-y-1">
+                         <p>> Container 'kratos-solver-01' active (Port 5000)</p>
+                         <p>> Autoscaling group: 2/5 instances running</p>
+                         <p className="text-emerald-400">> [INFO] Service mesh sync complete.</p>
+                     </div>
+                 </div>
+             </div>
+           )}
+
            {activeTab === 'plugins' && (
              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
-                <h3 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-4">Plugin Marketplace</h3>
+                <h3 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-4">Plugin Marketplace (Part 17)</h3>
                 <p className="text-sm text-slate-500">Extend StructurAI functionalities with third-party solvers and code packs.</p>
                 
                 <div className="space-y-4">

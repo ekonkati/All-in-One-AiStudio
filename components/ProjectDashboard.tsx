@@ -1,4 +1,5 @@
 
+
 import React, { useMemo } from 'react';
 import { ProjectDetails, ViewState } from '../types';
 import { calculateProjectStats, generateSchedule } from '../services/calculationService';
@@ -6,6 +7,7 @@ import OverviewCards from './dashboard/OverviewCards';
 import ProgressChart from './dashboard/ProgressChart';
 import ActionCenter from './dashboard/ActionCenter';
 import AiInsights from './dashboard/AiInsights';
+import AiOrchestrator from './dashboard/AiOrchestrator';
 
 interface DashboardProps {
   project: Partial<ProjectDetails>;
@@ -35,6 +37,8 @@ const ProjectDashboard: React.FC<DashboardProps> = ({ project, onChangeView }) =
         </span>
       </div>
 
+      <AiOrchestrator project={project} onChangeView={onChangeView} />
+      
       <OverviewCards project={project} stats={stats} schedule={schedule} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -42,7 +46,7 @@ const ProjectDashboard: React.FC<DashboardProps> = ({ project, onChangeView }) =
         <ActionCenter onChangeView={onChangeView} />
       </div>
 
-      <AiInsights project={project} stats={stats} />
+      <AiInsights project={project} stats={stats} onChangeView={onChangeView} />
     </div>
   );
 };

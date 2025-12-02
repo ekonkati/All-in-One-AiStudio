@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Download, Maximize, ZoomIn, ZoomOut, Grid } from 'lucide-react';
+import { Download, Maximize, ZoomIn, ZoomOut, Grid, Layout, FileType, Loader2 } from 'lucide-react';
 import { ProjectDetails } from '../../types';
 
 interface DetailingViewerProps {
@@ -9,9 +9,27 @@ interface DetailingViewerProps {
 
 const DetailingViewer: React.FC<DetailingViewerProps> = ({ project }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [detailType, setDetailType] = useState<string>('primary');
+  const [currentSheet, setCurrentSheet] = useState<string>('GA-01');
+  const [isExporting, setIsExporting] = useState(false);
 
-  // Drawing Logic
+  const sheets = [
+      { id: 'GA-01', title: 'General Arrangement' },
+      { id: 'BM-01', title: 'Beam Reinforcement Details' },
+      { id: 'COL-01', title: 'Column Layout & Schedule' },
+      { id: 'FT-01', title: 'Foundation Details' },
+      { id: 'ST-01', title: 'Staircase Section' }
+  ];
+
+  // Mock Export Function
+  const handleExport = () => {
+      setIsExporting(true);
+      setTimeout(() => {
+          setIsExporting(false);
+          alert("Drawing Package (PDF + DXF) generated successfully!");
+      }, 2000);
+  };
+
+  // Drawing Logic (Simplified for demo)
   const drawDetail = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = '#ffffff';
@@ -31,16 +49,46 @@ const DetailingViewer: React.FC<DetailingViewerProps> = ({ project }) => {
     const cx = width / 2;
     const cy = height / 2;
 
-    if (project.type === 'PEB' || project.type === 'Steel') {
-        drawPEBConnection(ctx, cx, cy);
-    } else if (project.type === 'Retaining Wall') {
-        drawWallReinforcement(ctx, cx, cy);
-    } else {
+    // Dynamic Drawing based on Sheet Selection
+    if (currentSheet === 'BM-01') {
         drawRCCBeamSection(ctx, cx, cy);
+    } else if (currentSheet === 'GA-01') {
+        drawGALayout(ctx, cx, cy);
+    } else {
+        // Generic Placeholder for other sheets
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = '20px Inter';
+        ctx.textAlign = 'center';
+        ctx.fillText(`${sheets.find(s => s.id === currentSheet)?.title} - Placeholder`, cx, cy);
     }
 
     // Title Block
     drawTitleBlock(ctx, width, height);
+  };
+
+  const drawGALayout = (ctx: CanvasRenderingContext2D, cx: number, cy: number) => {
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 2;
+      // Simple Grid
+      const size = 200;
+      ctx.strokeRect(cx - size, cy - size, size*2, size*2);
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - size); ctx.lineTo(cx, cy + size);
+      ctx.moveTo(cx - size, cy); ctx.lineTo(cx + size, cy);
+      ctx.stroke();
+      
+      // Columns
+      ctx.fillStyle = '#ef4444';
+      [cx-size, cx, cx+size].forEach(x => {
+          [cy-size, cy, cy+size].forEach(y => {
+              ctx.fillRect(x - 5, y - 5, 10, 10);
+          });
+      });
+      
+      ctx.fillStyle = '#0f172a';
+      ctx.font = '14px Inter';
+      ctx.textAlign = 'center';
+      ctx.fillText('STRUCTURAL LAYOUT PLAN', cx, cy + size + 30);
   };
 
   const drawRCCBeamSection = (ctx: CanvasRenderingContext2D, cx: number, cy: number) => {
@@ -120,117 +168,6 @@ const DetailingViewer: React.FC<DetailingViewerProps> = ({ project }) => {
       ctx.fillText('8Φ @ 150c/c (Mid)', x + beamL/2 - 20, y + beamD + 40);
   };
 
-  const drawPEBConnection = (ctx: CanvasRenderingContext2D, cx: number, cy: number) => {
-      // Knee Joint (Column to Rafter)
-      const scale = 1.5;
-      
-      ctx.translate(cx - 100, cy + 100);
-      ctx.scale(scale, scale);
-
-      // Column (Tapered)
-      ctx.beginPath();
-      ctx.fillStyle = '#e2e8f0';
-      ctx.strokeStyle = '#1e293b';
-      ctx.lineWidth = 2;
-      ctx.moveTo(0, 0); // Base
-      ctx.lineTo(0, -200); // Top outer
-      ctx.lineTo(40, -200); // Top Inner
-      ctx.lineTo(20, 0); // Bottom Inner
-      ctx.closePath();
-      ctx.fill(); ctx.stroke();
-
-      // Rafter (Tapered)
-      ctx.beginPath();
-      ctx.moveTo(42, -200); // Connection Point
-      ctx.lineTo(250, -250); // Ridge
-      ctx.lineTo(250, -280); 
-      ctx.lineTo(42, -240); // Top Connection
-      ctx.closePath();
-      ctx.fill(); ctx.stroke();
-
-      // End Plate
-      ctx.fillStyle = '#475569';
-      ctx.fillRect(40, -250, 4, 60);
-
-      // Bolts
-      ctx.fillStyle = '#ef4444';
-      for(let i=0; i<4; i++) {
-          ctx.beginPath();
-          ctx.arc(42, -240 + (i*12), 2, 0, Math.PI*2);
-          ctx.fill();
-      }
-
-      // Haunch Reinforcement (Stiffener)
-      ctx.beginPath();
-      ctx.strokeStyle = '#64748b';
-      ctx.moveTo(42, -220);
-      ctx.lineTo(80, -225);
-      ctx.stroke();
-
-      // Reset Transform
-      ctx.scale(1/scale, 1/scale);
-      ctx.translate(-(cx - 100), -(cy + 100));
-
-      // Annotations
-      ctx.font = 'bold 16px Inter';
-      ctx.fillStyle = '#0f172a';
-      ctx.fillText('PEB EAVE KNEE CONNECTION', cx - 120, cy - 150);
-
-      ctx.font = '12px Inter';
-      ctx.fillStyle = '#334155';
-      ctx.fillText('Column ISMB 450 (Tapered)', cx - 180, cy + 50);
-      ctx.fillText('Rafter ISMB 350', cx + 100, cy - 100);
-      
-      ctx.fillStyle = '#ef4444';
-      ctx.fillText('8x M24 HSFG Bolts (8.8 Grade)', cx, cy - 40);
-  };
-
-  const drawWallReinforcement = (ctx: CanvasRenderingContext2D, cx: number, cy: number) => {
-      // Retaining Wall Section
-      const scale = 2;
-      ctx.translate(cx, cy + 50);
-      ctx.scale(scale, scale);
-
-      // Concrete Outline
-      ctx.beginPath();
-      ctx.strokeStyle = '#334155';
-      ctx.lineWidth = 1.5;
-      // Stem
-      ctx.moveTo(0, 0);
-      ctx.lineTo(15, 0);
-      ctx.lineTo(15, -100);
-      ctx.lineTo(0, -100);
-      ctx.closePath();
-      // Base
-      ctx.rect(-20, 0, 60, 10);
-      ctx.stroke();
-
-      // Rebar - Stem Main
-      ctx.beginPath();
-      ctx.strokeStyle = '#dc2626';
-      ctx.lineWidth = 1;
-      ctx.moveTo(12, -95);
-      ctx.lineTo(12, 5);
-      ctx.lineTo(35, 5); // Development length into toe
-      ctx.stroke();
-
-      // Rebar - Base Mesh
-      ctx.beginPath();
-      ctx.strokeStyle = '#1d4ed8';
-      ctx.moveTo(-15, 5);
-      ctx.lineTo(35, 5);
-      ctx.stroke();
-
-      ctx.scale(1/scale, 1/scale);
-      ctx.translate(-cx, -(cy + 50));
-
-      ctx.font = 'bold 14px Inter';
-      ctx.fillStyle = '#0f172a';
-      ctx.fillText('WALL REINFORCEMENT DETAIL', cx - 80, cy - 120);
-      ctx.font = '12px Inter';
-      ctx.fillText('Main Bar: 16Φ @ 150 c/c', cx + 40, cy - 40);
-  };
-
   const drawTitleBlock = (ctx: CanvasRenderingContext2D, w: number, h: number) => {
       const boxH = 60;
       ctx.fillStyle = '#ffffff';
@@ -241,10 +178,11 @@ const DetailingViewer: React.FC<DetailingViewerProps> = ({ project }) => {
 
       ctx.fillStyle = '#000000';
       ctx.font = 'bold 14px Inter';
+      ctx.textAlign = 'left';
       ctx.fillText('StructurAI Generated Drawing', 20, h - 35);
       
       ctx.font = '12px Inter';
-      ctx.fillText(`Project: ${project.name || 'Untitled'}`, 20, h - 15);
+      ctx.fillText(`Project: ${project.name || 'Untitled'} - Sheet: ${currentSheet}`, 20, h - 15);
       
       ctx.textAlign = 'right';
       ctx.fillText(`Date: ${new Date().toLocaleDateString()}`, w - 20, h - 35);
@@ -270,35 +208,56 @@ const DetailingViewer: React.FC<DetailingViewerProps> = ({ project }) => {
         }
       }
     }
-  }, [project, detailType]);
+  }, [project, currentSheet]);
 
   return (
-    <div className="flex flex-col h-full bg-slate-50 p-6">
-      <div className="mb-4 flex justify-between items-center">
-         <div className="flex gap-2">
-             <button 
-                onClick={() => setDetailType('primary')}
-                className={`px-3 py-1 text-sm rounded transition-colors ${detailType === 'primary' ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 border border-slate-300'}`}
-             >
-                {project.type === 'PEB' ? 'Knee Connection' : 'Beam Section'}
-             </button>
-             <button 
-                onClick={() => setDetailType('secondary')}
-                className={`px-3 py-1 text-sm rounded transition-colors ${detailType === 'secondary' ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 border border-slate-300'}`}
-             >
-                {project.type === 'PEB' ? 'Base Plate' : 'Column Section'}
-             </button>
-         </div>
-         <div className="flex gap-2">
-            <button className="p-2 bg-white border border-slate-300 rounded hover:bg-slate-100 text-slate-600"><ZoomIn size={18} /></button>
-            <button className="p-2 bg-white border border-slate-300 rounded hover:bg-slate-100 text-slate-600"><ZoomOut size={18} /></button>
-            <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 shadow-sm">
-                <Download size={16} /> Export DXF
-            </button>
-         </div>
+    <div className="flex h-full bg-slate-50 p-6 gap-4">
+      
+      {/* Sheet Selector Sidebar */}
+      <div className="w-64 bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col">
+          <div className="p-4 border-b border-slate-100">
+              <h3 className="font-semibold text-slate-700 flex items-center gap-2">
+                  <Layout size={16} /> Drawing Sheets
+              </h3>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+              {sheets.map(sheet => (
+                  <button
+                      key={sheet.id}
+                      onClick={() => setCurrentSheet(sheet.id)}
+                      className={`w-full text-left px-3 py-2 rounded text-sm transition-colors flex items-center gap-2 ${
+                          currentSheet === sheet.id ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-50'
+                      }`}
+                  >
+                      <FileType size={14} className="opacity-70" />
+                      <div className="truncate">
+                          <span className="font-mono text-xs mr-2 opacity-70">{sheet.id}</span>
+                          {sheet.title}
+                      </div>
+                  </button>
+              ))}
+          </div>
+          <div className="p-4 border-t border-slate-100">
+              <button 
+                onClick={handleExport}
+                disabled={isExporting}
+                className="w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center justify-center gap-2 transition-all shadow-sm disabled:opacity-70"
+              >
+                  {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                  {isExporting ? 'Packaging...' : 'Export All (DXF/PDF)'}
+              </button>
+          </div>
       </div>
-      <div className="flex-1 bg-white border border-slate-300 shadow-lg rounded overflow-hidden">
-         <canvas ref={canvasRef} className="block" />
+
+      {/* Canvas Area */}
+      <div className="flex-1 flex flex-col bg-white border border-slate-300 shadow-lg rounded overflow-hidden">
+         <div className="p-2 bg-slate-100 border-b border-slate-200 flex justify-end gap-2">
+            <button className="p-1.5 bg-white border border-slate-300 rounded hover:bg-slate-50 text-slate-600"><ZoomIn size={16} /></button>
+            <button className="p-1.5 bg-white border border-slate-300 rounded hover:bg-slate-50 text-slate-600"><ZoomOut size={16} /></button>
+         </div>
+         <div className="flex-1 relative">
+            <canvas ref={canvasRef} className="block w-full h-full" />
+         </div>
       </div>
     </div>
   );

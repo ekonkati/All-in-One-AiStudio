@@ -10,17 +10,19 @@ import LoadGenerator from './analysis/LoadGenerator';
 import SafetyCheck from './structure/SafetyCheck';
 import DesignReport from './structure/DesignReport';
 import ValidationCenter from './analysis/ValidationCenter';
-import { ArrowRight, BarChart3, Table2, ShieldCheck, PenTool, Zap, BookOpen, AlertOctagon } from 'lucide-react';
+import ConnectionDesign from './structure/ConnectionDesign';
+import { ArrowRight, BarChart3, Table2, ShieldCheck, PenTool, Zap, BookOpen, AlertOctagon, Link2 } from 'lucide-react';
 import { generateStructuralMembers, generateBBS } from '../services/calculationService';
 
 interface StructuralAnalysisProps {
   project: Partial<ProjectDetails>;
   onChangeView?: (view: ViewState) => void;
+  initialTab?: string;
 }
 
-type Tab = 'loads' | 'validation' | 'analysis' | 'safety' | 'report' | 'schedule' | 'bbs' | 'detailing';
+type Tab = 'loads' | 'validation' | 'analysis' | 'safety' | 'report' | 'schedule' | 'bbs' | 'detailing' | 'connections';
 
-const StructuralAnalysis: React.FC<StructuralAnalysisProps> = ({ project, onChangeView }) => {
+const StructuralAnalysis: React.FC<StructuralAnalysisProps> = ({ project, onChangeView, initialTab }) => {
   const [activeTab, setActiveTab] = useState<Tab>('loads');
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzed, setAnalyzed] = useState(false);
@@ -39,6 +41,12 @@ const StructuralAnalysis: React.FC<StructuralAnalysisProps> = ({ project, onChan
     wind: false,
     seismic: false
   });
+
+  useEffect(() => {
+    if (initialTab && ['loads', 'validation', 'analysis', 'safety', 'report', 'schedule', 'bbs', 'detailing', 'connections'].includes(initialTab)) {
+        setActiveTab(initialTab as Tab);
+    }
+  }, [initialTab]);
 
   const structuralMembers = useMemo(() => generateStructuralMembers(project), [project]);
   const bbsItems = useMemo(() => generateBBS(project), [project]);
@@ -144,6 +152,17 @@ const StructuralAnalysis: React.FC<StructuralAnalysisProps> = ({ project, onChan
             <span>Safety</span>
           </button>
           <button
+            onClick={() => setActiveTab('connections')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
+              activeTab === 'connections' 
+                ? 'bg-blue-600 text-white shadow-sm' 
+                : 'text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <Link2 size={16} />
+            <span>Connections</span>
+          </button>
+          <button
             onClick={() => setActiveTab('report')}
             className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
               activeTab === 'report' 
@@ -189,6 +208,10 @@ const StructuralAnalysis: React.FC<StructuralAnalysisProps> = ({ project, onChan
 
       {activeTab === 'safety' && (
         <SafetyCheck members={structuralMembers} />
+      )}
+
+      {activeTab === 'connections' && (
+        <ConnectionDesign />
       )}
 
       {activeTab === 'report' && (

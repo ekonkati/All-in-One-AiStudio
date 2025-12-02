@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { 
   LayoutDashboard, 
@@ -16,15 +17,25 @@ import {
   PlusCircle,
   Crown,
   Database,
-  Zap
+  Zap,
+  Box,
+  Activity,
+  Briefcase,
+  Link2,
+  Lock,
+  BrainCircuit,
+  Sparkles
 } from 'lucide-react';
-import { ViewState } from '../types';
+import { ViewState, ProjectDetails, UserRole } from '../types';
 
 interface SidebarProps {
   currentView: ViewState;
   setView: (view: ViewState) => void;
   projectCreated: boolean;
   onReset: () => void;
+  currentProjectType?: string;
+  onSwitchTemplate?: (type: any) => void;
+  userRole: UserRole;
 }
 
 interface MenuItem {
@@ -33,9 +44,10 @@ interface MenuItem {
   icon?: React.ElementType;
   view?: ViewState;
   children?: MenuItem[];
+  roles?: UserRole[]; // Which roles can see this
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, projectCreated, onReset }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, projectCreated, onReset, currentProjectType, onSwitchTemplate, userRole }) => {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
     'engineering': true,
     'execution': true,
@@ -52,25 +64,29 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, projectCreated,
       id: 'general', 
       label: 'General', 
       children: [
-        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, view: 'dashboard' },
-        { id: 'chat', label: 'AI Consultant', icon: MessageSquare, view: 'chat' },
-        { id: 'reports', label: 'Reports', icon: FileText, view: 'reports' },
-        { id: 'exchange', label: 'Data Exchange', icon: Database, view: 'data-exchange' }
+        { id: 'portfolio', label: 'Portfolio', icon: Briefcase, view: 'portfolio', roles: ['Admin', 'Engineer'] },
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, view: 'dashboard', roles: ['Admin', 'Engineer', 'Client'] },
+        { id: 'chat', label: 'AI Consultant', icon: MessageSquare, view: 'chat', roles: ['Admin', 'Engineer'] },
+        { id: 'optimization', label: 'AI Optimization', icon: BrainCircuit, view: 'optimization-center', roles: ['Admin', 'Engineer'] },
+        { id: 'reports', label: 'Reports', icon: FileText, view: 'reports', roles: ['Admin', 'Engineer', 'Client'] },
+        { id: 'exchange', label: 'Data Exchange', icon: Database, view: 'data-exchange', roles: ['Admin', 'Engineer'] }
       ]
     },
     { 
       id: 'engineering', 
       label: 'Engineering', 
+      roles: ['Admin', 'Engineer'],
       children: [
         { id: 'layout', label: 'Layouts', icon: Ruler, view: 'layout' },
         { id: 'structure', label: 'Structural Design', icon: HardHat, view: 'structure' },
-        // Quick access to load engine via structure view (simulated link)
+        { id: 'connections', label: 'Connections', icon: Link2, view: 'connections' },
         { id: 'loads', label: 'Load Engine', icon: Zap, view: 'structure' },
       ]
     },
     { 
       id: 'commercial', 
       label: 'Commercial', 
+      roles: ['Admin', 'Engineer'],
       children: [
         { id: 'estimation', label: 'Estimation & BOQ', icon: Calculator, view: 'estimation' },
         { id: 'procurement', label: 'Procurement', icon: ShoppingCart, view: 'procurement' },
@@ -80,7 +96,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, projectCreated,
       id: 'execution', 
       label: 'Construction', 
       children: [
-        { id: 'management', label: 'Site Management', icon: CalendarClock, view: 'management' },
+        { id: 'management', label: 'Site Management', icon: CalendarClock, view: 'management', roles: ['Admin', 'Engineer', 'Client'] },
+        { id: 'monitor', label: 'Digital Twin', icon: Activity, view: 'digital-twin', roles: ['Admin', 'Engineer', 'Client'] },
+        { id: 'closure', label: 'Project Closure', icon: Lock, view: 'closure', roles: ['Admin', 'Engineer'] },
       ]
     }
   ];
@@ -93,6 +111,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, projectCreated,
     }
   };
 
+  const isVisible = (roles: UserRole[] | undefined) => !roles || roles.includes(userRole);
+
   return (
     <div className="w-64 bg-slate-900 text-white h-screen flex flex-col shadow-xl flex-shrink-0 z-50">
       <div className="p-6 border-b border-slate-700">
@@ -104,17 +124,37 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, projectCreated,
 
       <div className="p-4 space-y-3">
         <button 
-          onClick={onReset}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-900/20 active:scale-95"
+          onClick={() => setView('ai-studio')}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-900/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={userRole === 'Client'}
         >
-          <PlusCircle size={18} />
-          <span className="font-semibold">New Project</span>
+          <Sparkles size={18} />
+          <span className="font-semibold">AI Design Studio</span>
         </button>
+        
+        {projectCreated && onSwitchTemplate && userRole !== 'Client' && (
+           <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
+              <label className="text-[10px] text-slate-400 uppercase font-bold mb-2 block flex items-center gap-1">
+                 <Box size={10} /> Active Template
+              </label>
+              <select 
+                value={currentProjectType} 
+                onChange={(e) => onSwitchTemplate(e.target.value)}
+                className="w-full bg-slate-900 text-white text-xs p-2 rounded border border-slate-600 focus:ring-1 focus:ring-blue-500 outline-none"
+              >
+                 <option value="RCC">RCC Building</option>
+                 <option value="PEB">PEB Warehouse</option>
+                 <option value="Retaining Wall">Retaining Wall</option>
+                 <option value="Water Tank">Water Tank</option>
+                 <option value="Landfill">Landfill Cell</option>
+              </select>
+           </div>
+        )}
       </div>
 
       <nav className="flex-1 overflow-y-auto py-2">
         <div className="space-y-4 px-3">
-          {menuStructure.map((group) => (
+          {menuStructure.filter(g => isVisible(g.roles) || g.children?.some(c => isVisible(c.roles))).map((group) => (
             <div key={group.id} className="mb-2">
               <button 
                 onClick={() => toggleGroup(group.id)}
@@ -126,15 +166,15 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, projectCreated,
               
               {expanded[group.id] && (
                 <ul className="space-y-1 animate-in slide-in-from-left-2 duration-200">
-                  {group.children?.map((item) => (
+                  {group.children?.filter(item => isVisible(item.roles)).map((item) => (
                     <li key={item.id}>
                       <button
                         onClick={() => handleItemClick(item)}
-                        disabled={!projectCreated && item.id !== 'chat'}
+                        disabled={!projectCreated && !['chat', 'portfolio', 'ai-studio'].includes(item.id)}
                         className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group
                           ${currentView === item.view 
                             ? 'bg-slate-800 text-white shadow-md border-l-2 border-blue-500' 
-                            : !projectCreated && item.id !== 'chat'
+                            : !projectCreated && !['chat', 'portfolio', 'ai-studio'].includes(item.id)
                               ? 'text-slate-600 cursor-not-allowed'
                               : 'text-slate-400 hover:bg-slate-800 hover:text-white'}
                         `}
@@ -177,7 +217,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, projectCreated,
         </button>
         <button 
           onClick={onReset}
-          className="flex items-center space-x-3 text-red-400 hover:text-red-300 transition-colors w-full px-4 py-2 mt-1 hover:bg-slate-800 rounded-lg">
+          className="flex items-center space-x-3 text-red-400 hover:text-red-300 transition-colors w-full px-4 py-2 mt-1 hover:bg-slate-800 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={userRole === 'Client'}
+        >
           <LogOut size={20} />
           <span>Reset App</span>
         </button>

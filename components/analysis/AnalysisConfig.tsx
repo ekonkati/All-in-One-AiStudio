@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Settings2, Wind, Activity, Play } from 'lucide-react';
+import { Settings2, Wind, Activity, Play, Cpu } from 'lucide-react';
 
 interface AnalysisConfigProps {
   projectType: string | undefined;
@@ -13,7 +13,7 @@ interface AnalysisConfigProps {
 
 const AnalysisConfig: React.FC<AnalysisConfigProps> = ({ projectType, materials, setMaterials, loads, setLoads, runAnalysis }) => {
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-6">
         <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
           <Settings2 size={20} className="text-blue-600" />
@@ -21,6 +21,22 @@ const AnalysisConfig: React.FC<AnalysisConfigProps> = ({ projectType, materials,
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Solver Engine Selection (Part 30) */}
+          <div className="md:col-span-2 bg-slate-50 p-4 rounded-lg border border-slate-200">
+             <h4 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
+                <Cpu size={16} className="text-indigo-600" /> FEA Solver Engine
+             </h4>
+             <select className="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
+                 <option value="kratos">Kratos Multiphysics (Default - Structural/Geo/Fluid)</option>
+                 <option value="fenics">FEniCSx (Advanced Continuum Mechanics)</option>
+                 <option value="opensees">OpenSees (Seismic/Nonlinear)</option>
+                 <option value="staad">STAAD.Pro Solver (Legacy)</option>
+             </select>
+             <p className="text-xs text-slate-500 mt-2">
+                Select the computational kernel. Kratos is recommended for multi-physics coupling (Fluid-Structure-Soil).
+             </p>
+          </div>
+
           {/* Material Properties */}
           <div>
             <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Material Specs</h4>

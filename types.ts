@@ -1,4 +1,5 @@
 
+
 export interface ProjectDetails {
   id: string;
   name: string;
@@ -10,11 +11,13 @@ export interface ProjectDetails {
   };
   stories: number;
   soilType: string;
-  status: 'Concept' | 'Modeling' | 'Analysis' | 'Design' | 'Estimation' | 'Construction';
+  status: 'Concept' | 'Modeling' | 'Analysis' | 'Design' | 'Estimation' | 'Construction' | 'Closure';
   budget?: number;
   startDate?: string;
   createdAt: string;
 }
+
+export type UserRole = 'Engineer' | 'Client' | 'Admin';
 
 export interface ChatMessage {
   id: string;
@@ -150,6 +153,7 @@ export interface RateComponent {
   quantity: number;
   unitRate: number;
   amount: number;
+  orderDate?: string;
 }
 
 export interface RateAnalysisItem {
@@ -332,4 +336,171 @@ export interface ValidationIssue {
   recommendation: string;
 }
 
-export type ViewState = 'dashboard' | 'chat' | 'layout' | 'structure' | 'estimation' | 'procurement' | 'management' | 'reports' | 'settings' | 'subscription' | 'data-exchange';
+// Inventory Management (Part 18/28)
+export interface InventoryItem {
+  id: string;
+  material: string;
+  unit: string;
+  stock: number;
+  required: number;
+  reorderLevel: number;
+  status: 'Adequate' | 'Low' | 'Critical';
+}
+
+// MEP Coordination (Part 41)
+export interface MEPItem {
+  id: string;
+  type: 'Duct' | 'Pipe' | 'Tray';
+  description: string;
+  start: { x: number, y: number };
+  end: { x: number, y: number };
+  width: number;
+  color: string;
+  clash: boolean;
+}
+
+// Portfolio Management (Part 35)
+export interface ProjectSummary {
+  id: string;
+  name: string;
+  type: string;
+  location: string;
+  progress: number;
+  budget: number;
+  spent: number;
+  status: 'On Track' | 'Delayed' | 'Critical';
+  riskLevel: 'Low' | 'Medium' | 'High';
+}
+
+// Approval Workflow (Part 29)
+export interface ApprovalRequest {
+  id: string;
+  subject: string;
+  type: 'Drawing' | 'BOQ' | 'Design' | 'Variation';
+  requestedBy: string;
+  date: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  version: string;
+  comments?: string;
+}
+
+// Billing (Part 25)
+export interface BillLineItem {
+  id: string;
+  description: string;
+  qty: number;
+  unit: string;
+  rate: number;
+  prevQty: number;
+  amount: number;
+}
+
+// Connection Design (Part 9.7)
+export interface ConnectionResult {
+  id: string;
+  type: 'Moment End Plate' | 'Shear Fin' | 'Base Plate';
+  members: string;
+  status: 'Pass' | 'Fail';
+  utilization: number; // Ratio < 1.0 is pass
+  checks: { check: string; val: number; limit: number; status: string }[];
+}
+
+// Project Closure (Part 27)
+export interface ClosureDocument {
+  id: string;
+  name: string;
+  status: 'Pending' | 'Submitted' | 'Approved';
+  type: 'As-Built' | 'Warranty' | 'NOC' | 'Handover';
+}
+
+// Audit & Security (Part 19)
+export interface AuditLog {
+    id: string;
+    timestamp: string;
+    user: string;
+    action: string;
+    module: string;
+    details: string;
+    status: 'Success' | 'Failed' | 'Warning';
+}
+
+// Deployment Status (Part 42)
+export interface SystemStatus {
+    component: string;
+    status: 'Healthy' | 'Degraded' | 'Down';
+    latency: number; // ms
+    uptime: string;
+}
+
+// AI Optimization & Value Engineering
+export interface OptimizationSuggestion {
+    id: string;
+    category: 'Material' | 'Structural' | 'Cost';
+    title: string;
+    description: string;
+    impact: string; // e.g., "-5% Cost"
+    status: 'pending' | 'applied';
+}
+
+// MIS Dashboards (Part 14)
+export interface EngineeringStatusKPI {
+  designsCompleted: number;
+  designsPending: number;
+  drawingsIssued: number;
+  revisions: number;
+  designProgress: { name: string, completed: number, total: number }[];
+}
+export interface ProcurementKPI {
+  totalPOs: number;
+  totalValue: number;
+  activeVendors: number;
+  delayedDeliveries: number;
+  vendorPerformance: { name: string, rating: number }[];
+}
+export interface SafetyKPI {
+  totalInspections: number;
+  passed: number;
+  failed: number;
+  ncrOpen: number;
+  complianceScore: number;
+}
+
+// Global Search
+export interface SearchResult {
+  id: string;
+  title: string;
+  description: string;
+  category: 'Navigation' | 'Member' | 'Document' | 'Task' | 'Vendor';
+  view: ViewState;
+  icon: React.ElementType;
+}
+
+// AI Design Studio
+export interface AiDesignStep {
+    id: number;
+    question: string;
+    action: 'INPUT' | 'GENERATE' | 'CONFIRM';
+    payload?: any; // For GENERATE, what to draw
+    response?: string;
+    status: 'pending' | 'active' | 'completed';
+}
+
+
+export type ViewState = 
+  'dashboard' | 
+  'portfolio' | 
+  'chat' | 
+  'layout' | 
+  'structure' | 
+  'connections' | 
+  'estimation' | 
+  'procurement' | 
+  'management' | 
+  'digital-twin' | 
+  'closure' | 
+  'reports' | 
+  'settings' | 
+  'subscription' | 
+  'data-exchange' |
+  'optimization-center' |
+  'ai-studio';
